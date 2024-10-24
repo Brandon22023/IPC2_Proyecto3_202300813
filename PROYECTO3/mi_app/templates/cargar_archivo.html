@@ -1,0 +1,109 @@
+{% extends 'inicio.html' %}
+
+{% block content %}
+    <h1>Cargar Datos</h1>
+    <div class="main-container">
+        <div class="column">
+            <h3>Entrada</h3>
+            <textarea id="entrada" name="entrada" rows="15" cols="40" form="formulario" placeholder="Aquí aparecerá el contenido del archivo o texto que ingreses...">{{ contenido_xml }}</textarea>
+        </div>
+        
+        <div class="column">
+            <h3>Salida</h3>
+            <textarea id="salida" name="salida" rows="15" cols="40" placeholder="Aquí aparecerá el resultado procesado..."></textarea>
+        </div>
+    </div>
+
+    <div class="buttons-container">
+        <form method="post" enctype="multipart/form-data" id="formulario">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="archivo" class="file-label">Selecciona un archivo .xml:</label>
+                <input type="file" name="archivo" id="archivo" class="file-input" accept=".xml">
+            </div>
+            <div class="buttons">
+                <button type="submit" class="mandarlo-txt">mandalo al txt</button> <!-- Botón para cargar archivo -->
+                <button type="reset" class="reset">Reset</button>
+                <button type="button" class="enviar">enviar</button>
+            </div>
+        </form>
+    </div>
+
+    <style>
+        /* Contenedor principal */
+        .main-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 20px;
+        }
+
+        /* Columnas de Entrada y Salida */
+        .column {
+            width: 45%;
+        }
+
+        /* Estilos para los textos */
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        /* Botones de enviar y reset */
+        .buttons-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .file-label {
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        .file-input {
+            padding: 5px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .buttons {
+            margin-top: 20px;
+        }
+
+        .mandarlo-txt, .reset {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .mandarlo-txt {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .reset {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .mandarlo-txt:hover {
+            background-color: #45a049;
+        }
+
+        .reset:hover {
+            background-color: #e53935;
+        }
+
+    </style>
+{% endblock %}

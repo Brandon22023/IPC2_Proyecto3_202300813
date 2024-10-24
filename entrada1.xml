@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<solicitud_clasificacion>
+    <diccionario>
+        <sentimientos_positivos>
+            <palabra>Bueno</palabra>
+            <palabra>bonito</palabra>
+            <palabra>excelente</palabra>
+            <palabra>cool</palabra>
+            <palabra>satisfecho</palabra>
+            <palabra>tuanis</palabra>
+            <palabra>claro</palabra>
+        </sentimientos_positivos>
+        <sentimientos_negativos>
+            <palabra>malo</palabra>
+            <palabra>pésimo</palabra>
+            <palabra>triste</palabra>
+            <palabra>molesto</palabra>
+            <palabra>decepcionado</palabra>
+        </sentimientos_negativos>
+        <empresas_analizar>
+            <empresa>
+                <nombre>USAC</nombre>
+                <servicio nombre="inscripción">
+                    <alias> inscribí </alias>
+                    <alias> inscrito </alias>
+                    <alias> inscribes </alias>
+                    <alias> inscribes </alias>
+                    <alias> inscriben </alias>
+                    <alias> inscribiré </alias>
+                </servicio>
+                <servicio nombre="asignación">
+                    <alias> asignado </alias>
+                    <alias> asignar </alias>
+                    <alias> asignas </alias>
+                    <alias> asignan </alias>
+                </servicio>
+                <servicio nombre="graduación">
+                    <alias> graduar </alias>
+                    <alias> graduaré </alias>
+                </servicio>
+            </empresa>
+            <empresa>
+                <nombre>TIGO</nombre>
+                <servicio nombre="cobrar">
+                    <alias> cobro </alias>
+                    <alias> cobraron </alias>
+                </servicio>
+                <servicio nombre="instalacion">
+                    <alias> instalado </alias>
+                    <alias> instalas </alias>
+                    <alias> instalé </alias>
+                </servicio>
+                <servicio nombre="arreglar">
+                    <alias> arreglaron </alias>
+                    <alias> arreglo </alias>
+                    <alias> arregle </alias>
+                </servicio>
+            </empresa>
+        </empresas_analizar>
+    </diccionario>
+    <lista_mensajes>
+        <mensaje>
+            Lugar y fecha: Guatemala, 01/04/2022 15:01 Usuario:
+            map0001@usac.edu Red social: Twitter
+            El servicio en la USAC para inscripción fue muy bueno y me siento muy satisfecho.
+        </mensaje>
+        <mensaje>
+            Lugar y fecha: Guatemala,
+            01/04/2022 15:20 Usuario: map0002@usac.edu Red social: Facebook Hoy me inscribí
+            en la USAC, no encontré parqueo e inicié molesto mi gestión, luego tuve que hacer
+            cola y me indicaron que era la cola incorrecta, esto me enojó mucho y mejor me
+            fui.
+        </mensaje>
+        <mensaje>
+            Lugar y fecha: Guatemala, 05/04/2022 15:43 Usuario: map0003@usac.edu
+            Red social: WhatsApp
+            Ya estoy inscrito en la USAC, el proceso fue muy bueno, pero al salir,
+            mi carro tenía pinchadas las llantas, esto me preocupó
+            y me fui decepcionado.
+        </mensaje>
+    </lista_mensajes>
+</solicitud_clasificacion>
