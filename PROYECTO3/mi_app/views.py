@@ -3,6 +3,7 @@ from django.core.files.storage import FileSystemStorage
 import requests
 from django.http import JsonResponse
 from django.conf import settings
+import os
 
 # Vista para cargar datos (Cargar Archivo)
 
@@ -17,10 +18,28 @@ def cargar_archivo(request):
     if request.method == 'POST':
         if 'archivo' in request.FILES:  # Si se sube un archivo
             archivo = request.FILES['archivo']
-            # Obtener información del archivo
-            archivo_info = f"Nombre del archivo: {archivo.name}, Tamaño: {archivo.size} bytes"  # Puedes agregar más información si es necesario
-            contenido_xml = archivo.read().decode('utf-8')  # Leer y decodificar el archivo a texto
+            fs = FileSystemStorage()  # Crear una instancia de FileSystemStorage
+
+            # Definir el nombre del archivo que se guardará
+            nombre_archivo = 'entrada_mandado_flask.xml'
+            ruta_archivo = os.path.join(fs.location, nombre_archivo)
+
+            # Sobrescribir el archivo si ya existe
+            if os.path.exists(ruta_archivo):
+                os.remove(ruta_archivo)  # Eliminar el archivo existente
+
+            # Guardar el nuevo archivo
+            archivo_path = fs.save(nombre_archivo, archivo)  # Guardar el archivo en la carpeta de medios
+
+            # Leer el contenido del archivo guardado
+            with fs.open(archivo_path) as archivo_guardado:
+                contenido_xml = archivo_guardado.read().decode('utf-8')  # Leer y decodificar el archivo a texto
+
             request.session['contenido_xml'] = contenido_xml  # Guardar en la sesión
+            
+            # Construir la dirección completa del archivo
+            direccion_completa = os.path.abspath(ruta_archivo)  # Obtener la ruta completa
+            archivo_info = f"Archivo guardado como: {nombre_archivo} en la dirección: {direccion_completa}"
         elif 'reset' in request.POST:  # Si se presiona el botón Reset
             contenido_xml = ""
             request.session['contenido_xml'] = ""  # Limpiar la sesión
