@@ -2,24 +2,33 @@ from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 import requests
 from django.http import JsonResponse
+from django.conf import settings
+
 # Vista para cargar datos (Cargar Archivo)
 
 def inicio(request):
     return render(request, 'inicio.html')# Vista para cargar datos (Cargar Archivo)
 # Vista para cargar el archivo y mostrar su contenido
+
 def cargar_archivo(request):
     contenido_xml = request.session.get('contenido_xml', "")  # Obtener contenido guardado en la sesión
+    archivo_info = ""  # Variable para almacenar la información del archivo
 
     if request.method == 'POST':
         if 'archivo' in request.FILES:  # Si se sube un archivo
             archivo = request.FILES['archivo']
+            # Obtener información del archivo
+            archivo_info = f"Nombre del archivo: {archivo.name}, Tamaño: {archivo.size} bytes"  # Puedes agregar más información si es necesario
             contenido_xml = archivo.read().decode('utf-8')  # Leer y decodificar el archivo a texto
             request.session['contenido_xml'] = contenido_xml  # Guardar en la sesión
         elif 'reset' in request.POST:  # Si se presiona el botón Reset
             contenido_xml = ""
             request.session['contenido_xml'] = ""  # Limpiar la sesión
 
-    return render(request, 'cargar_archivo.html', {'contenido_xml': contenido_xml})
+    return render(request, 'cargar_archivo.html', {
+        'contenido_xml': contenido_xml,
+        'archivo_info': archivo_info  # Pasar la información del archivo al template
+    })
 
 def peticiones(request):
     # Lógica de la vista aquí
