@@ -6,28 +6,20 @@ from django.http import JsonResponse
 
 def inicio(request):
     return render(request, 'inicio.html')# Vista para cargar datos (Cargar Archivo)
+# Vista para cargar el archivo y mostrar su contenido
 def cargar_archivo(request):
-    contenido_xml = ""
-    
-    if request.method == 'POST' and request.FILES.get('archivo', None):
-        archivo = request.FILES['archivo']
-        
-        # Leer el contenido del archivo .xml
-        contenido_xml = archivo.read().decode('utf-8')  # Decodificar a UTF-8 para trabajar con texto
-        
-        # Guardar el archivo si es necesario
-        fs = FileSystemStorage()
-        filename = fs.save(archivo.name, archivo)
-        file_url = fs.url(filename)
-        
-        # Pasar el contenido leido al template para mostrar en el textarea de entrada
-        return render(request, 'cargar_archivo.html', {
-            'file_url': file_url, 
-            'contenido_xml': contenido_xml
-        })
-    
-    # Si no se ha cargado archivo, simplemente renderizar el template vacío
-    return render(request, 'cargar_archivo.html')
+    contenido_xml = request.session.get('contenido_xml', "")  # Obtener contenido guardado en la sesión
+
+    if request.method == 'POST':
+        if 'archivo' in request.FILES:  # Si se sube un archivo
+            archivo = request.FILES['archivo']
+            contenido_xml = archivo.read().decode('utf-8')  # Leer y decodificar el archivo a texto
+            request.session['contenido_xml'] = contenido_xml  # Guardar en la sesión
+        elif 'reset' in request.POST:  # Si se presiona el botón Reset
+            contenido_xml = ""
+            request.session['contenido_xml'] = ""  # Limpiar la sesión
+
+    return render(request, 'cargar_archivo.html', {'contenido_xml': contenido_xml})
 
 def peticiones(request):
     # Lógica de la vista aquí

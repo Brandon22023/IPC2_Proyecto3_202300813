@@ -5,7 +5,8 @@
     <div class="main-container">
         <div class="column">
             <h3>Entrada</h3>
-            <textarea id="entrada" name="entrada" rows="15" cols="40" form="formulario" placeholder="Aquí aparecerá el contenido del archivo o texto que ingreses...">{{ contenido_xml }}</textarea>
+            <!-- Área de texto donde se mostrará el contenido cargado -->
+            <textarea id="entrada" name="entrada" rows="15" cols="40" placeholder="Aquí aparecerá el contenido del archivo o texto que ingreses...">{{ contenido_xml }}</textarea>
         </div>
         
         <div class="column">
@@ -15,16 +16,15 @@
     </div>
 
     <div class="buttons-container">
-        <form method="post" enctype="multipart/form-data" id="formulario">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-group">
                 <label for="archivo" class="file-label">Selecciona un archivo .xml:</label>
                 <input type="file" name="archivo" id="archivo" class="file-input" accept=".xml">
             </div>
             <div class="buttons">
-                <button type="submit" class="mandarlo-txt">mandalo al txt</button> <!-- Botón para cargar archivo -->
-                <button type="reset" class="reset">Reset</button>
-                <button type="button" class="enviar">enviar</button>
+                <button type="submit" class="mandarlo-txt">Cargar Archivo</button> <!-- Botón para cargar archivo -->
+                <button type="submit" name="reset" value="reset" class="reset">Resetear</button> <!-- Botón reset -->
             </div>
         </form>
     </div>
@@ -53,6 +53,21 @@
             font-size: 16px;
         }
 
+        /* Estilo del botón de carga de archivos */
+        .file-label {
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .file-input {
+            display: none;
+        }
+
         /* Botones de enviar y reset */
         .buttons-container {
             text-align: center;
@@ -61,18 +76,6 @@
 
         .form-group {
             margin-bottom: 20px;
-        }
-
-        .file-label {
-            font-size: 16px;
-            margin-right: 10px;
-        }
-
-        .file-input {
-            padding: 5px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
         }
 
         .buttons {
@@ -104,6 +107,5 @@
         .reset:hover {
             background-color: #e53935;
         }
-
     </style>
 {% endblock %}
