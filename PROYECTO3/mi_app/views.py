@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
+from flask import redirect
 import requests
 from django.http import JsonResponse
 from django.conf import settings
@@ -11,43 +12,43 @@ def inicio(request):
     return render(request, 'inicio.html')# Vista para cargar datos (Cargar Archivo)
 # Vista para cargar el archivo y mostrar su contenido
 
+
 def cargar_archivo(request):
-    contenido_xml = request.session.get('contenido_xml', "")  # Obtener contenido guardado en la sesión
-    archivo_info = ""  # Variable para almacenar la información del archivo
+    # Si se ha presionado el botón de reset
+    if request.method == 'POST' and request.POST.get('reset') == 'reset':
+        # Limpiar los datos de la sesión
+        request.session['contenido_xml'] = ''
+        request.session['archivo_info'] = ''
+        
+        # Renderizar la plantilla sin datos
+        return render(request, 'cargar_archivo.html', {
+            'contenido_xml': '',
+            'archivo_info': ''
+        })
+    
+    elif request.method == 'POST' and 'archivo' in request.FILES:
+        # Cargar archivo XML y enviar a Flask
+        archivo = request.FILES['archivo']
+        respuesta = requests.post(
+            'http://127.0.0.1:5000/cargar_archivo',
+            files={'archivo': archivo}
+        )
+        
+        # Procesar la respuesta de Flask para obtener contenido y ruta
+        if respuesta.status_code == 200:
+            data = respuesta.json()
+            request.session['contenido_xml'] = data.get('contenido_xml', '')
+            request.session['archivo_info'] = data.get('ruta_archivo', '')
+        else:
+            request.session['contenido_xml'] = "Error al cargar el archivo."
+            request.session['archivo_info'] = ''
 
-    if request.method == 'POST':
-        if 'archivo' in request.FILES:  # Si se sube un archivo
-            archivo = request.FILES['archivo']
-            fs = FileSystemStorage()  # Crear una instancia de FileSystemStorage
-
-            # Definir el nombre del archivo que se guardará
-            nombre_archivo = 'entrada_mandado_flask.xml'
-            ruta_archivo = os.path.join(fs.location, nombre_archivo)
-
-            # Sobrescribir el archivo si ya existe
-            if os.path.exists(ruta_archivo):
-                os.remove(ruta_archivo)  # Eliminar el archivo existente
-
-            # Guardar el nuevo archivo
-            archivo_path = fs.save(nombre_archivo, archivo)  # Guardar el archivo en la carpeta de medios
-
-            # Leer el contenido del archivo guardado
-            with fs.open(archivo_path) as archivo_guardado:
-                contenido_xml = archivo_guardado.read().decode('utf-8')  # Leer y decodificar el archivo a texto
-
-            request.session['contenido_xml'] = contenido_xml  # Guardar en la sesión
-            
-            # Construir la dirección completa del archivo
-            direccion_completa = os.path.abspath(ruta_archivo)  # Obtener la ruta completa
-            archivo_info = f"Archivo guardado como: {nombre_archivo} en la dirección: {direccion_completa}"
-        elif 'reset' in request.POST:  # Si se presiona el botón Reset
-            contenido_xml = ""
-            request.session['contenido_xml'] = ""  # Limpiar la sesión
-
+    # Renderizar la plantilla con los datos actuales desde la sesión
     return render(request, 'cargar_archivo.html', {
-        'contenido_xml': contenido_xml,
-        'archivo_info': archivo_info  # Pasar la información del archivo al template
+        'contenido_xml': request.session.get('contenido_xml', ''),
+        'archivo_info': request.session.get('archivo_info', '')
     })
+
 
 def peticiones(request):
     # Lógica de la vista aquí

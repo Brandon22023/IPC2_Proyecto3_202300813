@@ -22,12 +22,18 @@
                 <label for="archivo" class="file-label">Selecciona un archivo .xml:</label>
                 <input type="file" name="archivo" id="archivo" class="file-input" accept=".xml">
             </div>
+            <!-- Campo oculto para identificar la acción de reset -->
+            <input type="hidden" name="reset" id="reset" value="false">
             <div class="buttons">
-                <button type="submit" class="mandarlo-txt">Cargar Archivo</button> <!-- Botón para cargar archivo -->
-                <button type="submit" name="reset" value="reset" class="reset">Resetear</button> <!-- Botón reset -->
+                <button type="submit" class="mandarlo-txt">Cargar Archivo</button>
+                <button type="submit" name="reset" value="reset" class="reset">Resetear</button>
             </div>
         </form>
     </div>
+
+    {% if archivo_info %}
+        <p><strong>Ruta del archivo cargado:</strong> {{ archivo_info }}</p>
+    {% endif %}
 
     <style>
         /* Contenedor principal */
@@ -109,7 +115,4 @@
         }
     </style>
 
-{% if archivo_info %}
-    <p>{{ archivo_info }}</p>
-{% endif %}
 {% endblock %}
