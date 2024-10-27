@@ -1,7 +1,9 @@
+import datetime
 import re
 from flask import Flask, request, jsonify, session
 import os
 import json
+from collections import Counter, defaultdict
 import traceback
 import xml.etree.ElementTree as ET
 app = Flask(__name__)
@@ -9,6 +11,8 @@ UPLOAD_FOLDER = './uploads'  # Carpeta donde se guardarán los archivos
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'your_secret_key'  # Necesario para usar sesiones
 archivo_cargado=False
+
+
 @app.route('/cargar_archivo', methods=['POST'])
 def cargar_archivo():
     global archivo_cargado
@@ -79,10 +83,8 @@ def cargar_archivo():
             #archivo_cargado = True
             print("el archiov cargado es:", archivo_cargado)
             #leer_y_mostrar_archivo()
-            obtener_sentimientos()
-            # Llamar directamente al método y mostrar la lista de empresas y servicios
-            lista_empresas = cargar_empresas_desde_xml()
-            lista_empresas.imprimir()
+            #obtener_sentimientos()
+            #cargar_empresas_desde_xml()
             # Llamar al método para analizar y mostrar mensajes
             analizar_mensajes()
             # Devolver el contenido JSON en la respuesta
@@ -156,209 +158,189 @@ def obtener_sentimientos():
     except Exception as e:
         print("Error inesperado:", e)
         return [], []
-    
-# Método para analizar mensajes y contar sentimientos
-def analizar_mensajes():
-    # Cargar sentimientos desde el archivo XML
-    sentimientos_positivos, sentimientos_negativos = obtener_sentimientos()
-    
-    ruta_archivo_xml = './uploads/entrada_mandado_flask.xml'
-    
-    if not os.path.exists(ruta_archivo_xml):
-        print("El archivo XML no existe en la ruta especificada.")
-        return
+
+
+def cargar_empresas_desde_xml():
+    """Carga empresas y servicios desde un archivo XML a una lista de diccionarios y los imprime."""
+    archivo_empresas = './uploads/entrada_mandado_flask.xml'
+    empresas = []
 
     try:
-        tree = ET.parse(ruta_archivo_xml)
+        tree = ET.parse(archivo_empresas)
         root = tree.getroot()
         
-        # Diccionario para almacenar mensajes clasificados por fecha
-        mensajes_por_fecha = {}
-        
-        # Contadores para total de mensajes positivos, negativos y neutros
-        total_positivos = 0
-        total_negativos = 0
-        total_neutros = 0
-
-        # Contadores para el total absoluto de sentimientos
-        total_sentimientos_positivos = 0
-        total_sentimientos_negativos = 0
-        total_sentimientos_neutros = 0
-
-        # Procesa cada mensaje en la lista de mensajes
-        lista_mensajes = root.find('lista_mensajes')
-        if lista_mensajes is not None:
-            for mensaje_element in lista_mensajes.findall('mensaje'):
-                mensaje_texto = mensaje_element.text.strip()
-                
-                # Extraer la fecha y el lugar usando una expresión regular
-                fecha_lugar_match = re.search(r"Lugar y fecha:\s*([^,]+),\s*(\d{2}/\d{2}/\d{4})", mensaje_texto)
-                if fecha_lugar_match:
-                    lugar = fecha_lugar_match.group(1)
-                    fecha = fecha_lugar_match.group(2)
-                else:
-                    lugar, fecha = "Desconocido", "Fecha desconocida"
-
-                # Contar sentimientos en el mensaje
-                positivos_count = sum(1 for palabra in sentimientos_positivos if re.search(r'\b' + re.escape(palabra) + r'\b', mensaje_texto, re.IGNORECASE))
-                negativos_count = sum(1 for palabra in sentimientos_negativos if re.search(r'\b' + re.escape(palabra) + r'\b', mensaje_texto, re.IGNORECASE))
-
-                # Clasificar el mensaje como positivo, negativo o neutro
-                if positivos_count > negativos_count:
-                    total_positivos += 1
-                elif negativos_count > positivos_count:
-                    total_negativos += 1
-                else:
-                    total_neutros += 1
-                    total_sentimientos_neutros += 1  # Contador de mensajes neutros totales
-
-                # Actualizar los totales absolutos de sentimientos
-                total_sentimientos_positivos += positivos_count
-                total_sentimientos_negativos += negativos_count
-
-                # Organizar el mensaje por fecha en el diccionario
-                if fecha not in mensajes_por_fecha:
-                    mensajes_por_fecha[fecha] = []
-                
-                mensajes_por_fecha[fecha].append({
-                    "lugar": lugar,
-                    "mensaje": mensaje_texto,
-                    "positivos_count": positivos_count,
-                    "negativos_count": negativos_count
-                })
-        
-        # Imprimir los resultados
-        for fecha, mensajes in mensajes_por_fecha.items():
-            print(f"\nFecha: {fecha}")
-            for mensaje in mensajes:
-                print(f"Lugar: {mensaje['lugar']}")
-                print(f"Mensaje: {mensaje['mensaje']}")
-                print(f"Sentimientos positivos en el mensaje: {mensaje['positivos_count']}")
-                print(f"Sentimientos negativos en el mensaje: {mensaje['negativos_count']}")
-
-        # Imprimir totales de mensajes y total absoluto de sentimientos
-        print(f"\nTotal de mensajes positivos: {total_positivos}")
-        print(f"Total de mensajes negativos: {total_negativos}")
-        print(f"Total de mensajes neutros: {total_neutros}")
-        print(f"Total absoluto de sentimientos positivos encontrados: {total_sentimientos_positivos}")
-        print(f"Total absoluto de sentimientos negativos encontrados: {total_sentimientos_negativos}")
-        print(f"Total absoluto de mensajes neutros: {total_sentimientos_neutros}")
-
-    except ET.ParseError as e:
-        print("Error al parsear el archivo XML:", e)
-    except Exception as e:
-        print("Error inesperado:", e)
-
-
-
-
-
-    
-# Nodo para los servicios de una empresa (con lista de alias)
-class Servicio:
-    def __init__(self, nombre):
-        self.nombre = nombre
-        self.aliases = []  # Lista de alias para el servicio
-        self.next = None   # Apunta al siguiente servicio en la lista circular
-
-    def agregar_alias(self, alias):
-        self.aliases.append(alias)
-
-
-# Nodo para cada empresa (con una lista circular de servicios)
-class Empresa:
-    def __init__(self, nombre):
-        self.nombre = nombre
-        self.servicios = None  # Lista circular de servicios
-        self.next = None       # Apunta a la siguiente empresa en la lista circular
-
-    def agregar_servicio(self, servicio):
-        if self.servicios is None:
-            self.servicios = servicio
-            servicio.next = servicio  # Enlaza a sí mismo, formando la circularidad
-        else:
-            # Inserta el servicio al final de la lista circular de servicios
-            ultimo_servicio = self.servicios
-            while ultimo_servicio.next != self.servicios:
-                ultimo_servicio = ultimo_servicio.next
-            ultimo_servicio.next = servicio
-            servicio.next = self.servicios
-
-
-# Lista circular de empresas
-class ListaCircular:
-    def __init__(self):
-        self.primero = None
-
-    def agregar_empresa(self, empresa):
-        if self.primero is None:
-            self.primero = empresa
-            empresa.next = empresa  # Enlaza a sí misma, formando la circularidad
-        else:
-            # Inserta la empresa al final de la lista circular de empresas
-            ultima_empresa = self.primero
-            while ultima_empresa.next != self.primero:
-                ultima_empresa = ultima_empresa.next
-            ultima_empresa.next = empresa
-            empresa.next = self.primero
-
-    def imprimir(self):
-        if self.primero is None:
-            print("La lista de empresas está vacía.")
-            return
-        actual = self.primero
-        while True:
-            print(f"Empresa: {actual.nombre}")
-            servicio_actual = actual.servicios
-            if servicio_actual:
-                while True:
-                    print(f"  Servicio: {servicio_actual.nombre}")
-                    print(f"    Alias: {', '.join(servicio_actual.aliases)}")
-                    servicio_actual = servicio_actual.next
-                    if servicio_actual == actual.servicios:
-                        break
-            actual = actual.next
-            if actual == self.primero:
-                break
-
-
-# Función para cargar empresas y servicios desde el XML (sin parámetros)
-def cargar_empresas_desde_xml():
-    # Define la ruta del archivo XML
-    UPLOAD_FOLDER = './uploads'  # Asegúrate de definir la ruta donde se almacena el archivo
-    ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
-    
-    # Cargar el archivo XML y parsear
-    tree = ET.parse(ruta_archivo_xml)
-    root = tree.getroot()
-
-    lista_empresas = ListaCircular()
-    
-    # Navega hasta la sección de empresas en el XML
-    empresas_element = root.find('diccionario/empresas_analizar')
-    if empresas_element is not None:
-        for empresa_element in empresas_element.findall('empresa'):
-            nombre_empresa = empresa_element.find('nombre').text
-            empresa = Empresa(nombre_empresa)
-            
-            # Procesa los servicios de la empresa
+        # Buscar dentro de diccionario/empresas_analizar
+        for empresa_element in root.find('diccionario/empresas_analizar').findall('empresa'):
+            nombre_empresa = empresa_element.find('nombre').text.strip()
+            servicios = []
             for servicio_element in empresa_element.findall('servicio'):
                 nombre_servicio = servicio_element.get('nombre')
-                servicio = Servicio(nombre_servicio)
-                
-                # Agrega los alias al servicio
-                for alias_element in servicio_element.findall('alias'):
-                    alias_texto = alias_element.text.strip()
-                    servicio.agregar_alias(alias_texto)
-                
-                # Agrega el servicio a la empresa
-                empresa.agregar_servicio(servicio)
+                aliases = [alias.text.strip() for alias in servicio_element.findall('alias')]
+                servicios.append({"nombre": nombre_servicio, "aliases": aliases})
             
-            # Agrega la empresa a la lista circular de empresas
-            lista_empresas.agregar_empresa(empresa)
+            empresa = {"nombre": nombre_empresa, "servicios": servicios}
+            empresas.append(empresa)
+            
+            # Imprimir la información de la empresa y sus servicios
+            print(f"Empresa cargada: {empresa['nombre']}")
+            for servicio in empresa["servicios"]:
+                print(f"  Servicio: {servicio['nombre']} | Aliases: {servicio['aliases']}")
+        
+        print("Empresas cargadas desde XML.")
+    except FileNotFoundError:
+        print(f"Error: No se encontró el archivo {archivo_empresas}")
+    except ET.ParseError:
+        print(f"Error: No se pudo parsear el archivo {archivo_empresas}")
+    
+    return empresas
 
-    return lista_empresas
 
+
+def analizar_mensajes():
+    # Obtener listas de sentimientos y empresas
+    sentimientos_positivos, sentimientos_negativos = obtener_sentimientos()
+    empresas = cargar_empresas_desde_xml()
+
+    try:
+        # Parsear el archivo de mensajes
+        tree = ET.parse('./uploads/entrada_mandado_flask.xml')
+        root = tree.getroot()
+
+        # Inicializar la lista de respuestas
+        respuestas = []
+
+        # Verificar que la lista de mensajes fue cargada
+        lista_mensajes = root.find('lista_mensajes')
+        if lista_mensajes is not None:
+            print("Lista de mensajes cargada. Iniciando procesamiento de mensajes...")
+
+            # Recorrer cada mensaje en lista_mensajes
+            for mensaje in lista_mensajes.findall('mensaje'):
+                texto_mensaje = mensaje.text.strip().replace('\n', ' ')  # Unir líneas en un solo string
+                fecha_mensaje = None
+
+                # Buscar la fecha usando expresiones regulares
+                fecha_match = re.search(r'(\d{2}/\d{2}/\d{4} \d{2}:\d{2})', texto_mensaje)
+                if fecha_match:
+                    fecha_mensaje = fecha_match.group(1)
+                    # Limpiar el texto del mensaje para remover la parte de la fecha
+                    texto_mensaje = re.sub(r'Lugar y fecha: .*?(\d{2}/\d{2}/\d{4} \d{2}:\d{2})', '', texto_mensaje)
+
+                # Contadores iniciales
+                positivos, negativos = 0, 0
+
+                # Contar palabras en el mensaje usando expresiones regulares
+                palabras = re.findall(r'\b\w+\b', texto_mensaje)  # Extrae palabras
+                for palabra in palabras:
+                    if palabra in sentimientos_positivos:
+                        positivos += 1
+                    elif palabra in sentimientos_negativos:
+                        negativos += 1
+
+                # Calcular neutros
+                neutros = 1 if positivos == negativos and positivos > 0 else 0
+
+                resultado_analisis = {
+                    'fecha': fecha_mensaje if fecha_mensaje else "Fecha no encontrada",
+                    'total': len(palabras),
+                    'positivos': positivos,
+                    'negativos': negativos,
+                    'neutros': neutros,
+                    'empresa_analisis': []
+                }
+
+                # Análisis por empresas y sus servicios/alias
+                for empresa in empresas:
+                    empresa_datos = {
+                        'nombre': empresa['nombre'],
+                        'total': 0,
+                        'positivos': 0,
+                        'negativos': 0,
+                        'neutros': 0,
+                        'servicios': []
+                    }
+
+                    # Chequeo del nombre de la empresa
+                    if empresa['nombre'] in texto_mensaje:
+                        empresa_datos['total'] = len(palabras)
+                        empresa_datos['positivos'] = positivos
+                        empresa_datos['negativos'] = negativos
+                        empresa_datos['neutros'] = neutros
+
+                    # Chequeo de alias de cada servicio
+                    for servicio in empresa['servicios']:
+                        servicio_datos = {
+                            'nombre': servicio['nombre'],
+                            'total': 0,
+                            'positivos': 0,
+                            'negativos': 0,
+                            'neutros': 0
+                        }
+
+                        # Verificar cada alias en el mensaje
+                        for alias in servicio['aliases']:
+                            if alias in texto_mensaje:
+                                servicio_datos['total'] = len(palabras)
+                                servicio_datos['positivos'] = positivos
+                                servicio_datos['negativos'] = negativos
+                                servicio_datos['neutros'] = neutros
+
+                        if servicio_datos['total'] > 0:
+                            empresa_datos['servicios'].append(servicio_datos)
+
+                    if empresa_datos['total'] > 0 or any(s['total'] > 0 for s in empresa_datos['servicios']):
+                        resultado_analisis['empresa_analisis'].append(empresa_datos)
+
+                # Agregar el resultado al listado de respuestas
+                respuestas.append(resultado_analisis)
+
+            print(f"Total de mensajes procesados: {len(respuestas)}")
+        else:
+            print("No se encontró la lista de mensajes en el archivo XML.")
+
+        # Crear la estructura del archivo XML de salida
+        root_respuesta = ET.Element("lista_respuestas")
+        for respuesta in respuestas:
+            respuesta_elemento = ET.SubElement(root_respuesta, "respuesta")
+            ET.SubElement(respuesta_elemento, "fecha").text = respuesta['fecha']  # Aquí se agrega la fecha
+
+            mensajes_elemento = ET.SubElement(respuesta_elemento, "mensajes")
+            ET.SubElement(mensajes_elemento, "total").text = str(respuesta['total'])
+            ET.SubElement(mensajes_elemento, "positivos").text = str(respuesta['positivos'])
+            ET.SubElement(mensajes_elemento, "negativos").text = str(respuesta['negativos'])
+            ET.SubElement(mensajes_elemento, "neutros").text = str(respuesta['neutros'])
+
+            analisis_elemento = ET.SubElement(respuesta_elemento, "analisis")
+            for empresa_datos in respuesta['empresa_analisis']:
+                empresa_elemento = ET.SubElement(analisis_elemento, "empresa", nombre=empresa_datos['nombre'])
+
+                mensajes_empresa = ET.SubElement(empresa_elemento, "mensajes")
+                ET.SubElement(mensajes_empresa, "total").text = str(empresa_datos['total'])
+                ET.SubElement(mensajes_empresa, "positivos").text = str(empresa_datos['positivos'])
+                ET.SubElement(mensajes_empresa, "negativos").text = str(empresa_datos['negativos'])
+                ET.SubElement(mensajes_empresa, "neutros").text = str(empresa_datos['neutros'])
+
+                servicios_elemento = ET.SubElement(empresa_elemento, "servicios")
+                for servicio in empresa_datos['servicios']:
+                    servicio_elemento = ET.SubElement(servicios_elemento, "servicio", nombre=servicio['nombre'])
+
+                    mensajes_servicio = ET.SubElement(servicio_elemento, "mensajes")
+                    ET.SubElement(mensajes_servicio, "total").text = str(servicio['total'])
+                    ET.SubElement(mensajes_servicio, "positivos").text = str(servicio['positivos'])
+                    ET.SubElement(mensajes_servicio, "negativos").text = str(servicio['negativos'])
+                    ET.SubElement(mensajes_servicio, "neutros").text = str(servicio['neutros'])
+
+        # Guardar el resultado en el archivo de salida
+        tree_respuesta = ET.ElementTree(root_respuesta)
+        tree_respuesta.write('./uploads/resultado_analisis.xml', encoding="utf-8", xml_declaration=True)
+        print("Análisis completado y guardado en './uploads/resultado_analisis.xml'.")
+
+    except ET.ParseError as e:
+        print(f"Error al parsear el archivo XML: {e}")
+    except FileNotFoundError:
+        print("Archivo de mensajes no encontrado.")
+    except Exception as e:
+        print(f"Error inesperado: {e}")
     
 @app.route('/modelo', methods=['POST'])
 def modelo():
