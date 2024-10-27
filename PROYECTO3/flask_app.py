@@ -174,8 +174,12 @@ def cargar_empresas_desde_xml():
             nombre_empresa = empresa_element.find('nombre').text.strip()
             servicios = []
             for servicio_element in empresa_element.findall('servicio'):
-                nombre_servicio = servicio_element.get('nombre')
+                nombre_servicio = servicio_element.get('nombre').strip()  # Obtener el nombre del servicio
                 aliases = [alias.text.strip() for alias in servicio_element.findall('alias')]
+                
+                # Agregar el nombre del servicio a la lista de aliases
+                aliases.append(nombre_servicio)
+                
                 servicios.append({"nombre": nombre_servicio, "aliases": aliases})
             
             empresa = {"nombre": nombre_empresa, "servicios": servicios}
@@ -225,27 +229,27 @@ def analizar_mensajes():
                     fecha_mensaje = fecha_match.group(1)
                     texto_mensaje = re.sub(r'Lugar y fecha: .*?(\d{2}/\d{2}/\d{4} \d{2}:\d{2})', '', texto_mensaje)
 
-                # Contadores iniciales
-                positivos, negativos = 0, 0
+                # Contadores iniciales para el mensaje
+                mensaje_positivos, mensaje_negativos, mensaje_neutros = 0, 0, 0
 
                 # Contar palabras en el mensaje usando expresiones regulares
                 palabras = re.findall(r'\b\w+\b', texto_mensaje)
                 for palabra in palabras:
                     if palabra in sentimientos_positivos:
-                        positivos += 1
+                        mensaje_positivos += 1
                     elif palabra in sentimientos_negativos:
-                        negativos += 1
+                        mensaje_negativos += 1
 
                 # Calcular neutros
-                neutros = 1 if positivos == negativos and positivos > 0 else 0
-                total = positivos + negativos + neutros
+                mensaje_neutros = 1 if mensaje_positivos == mensaje_negativos and mensaje_positivos > 0 else 0
 
+                # Inicializar el diccionario del análisis del mensaje
                 resultado_analisis = {
                     'fecha': fecha_mensaje if fecha_mensaje else "Fecha no encontrada",
-                    'total': total,
-                    'positivos': positivos,
-                    'negativos': negativos,
-                    'neutros': neutros,
+                    'total': 0,
+                    'positivos': 0,
+                    'negativos': 0,
+                    'neutros': 0,
                     'empresa_analisis': []
                 }
 
@@ -262,9 +266,9 @@ def analizar_mensajes():
 
                     # Chequeo del nombre de la empresa
                     if empresa['nombre'] in texto_mensaje:
-                        empresa_datos['positivos'] = positivos
-                        empresa_datos['negativos'] = negativos
-                        empresa_datos['neutros'] = neutros
+                        empresa_datos['positivos'] += mensaje_positivos
+                        empresa_datos['negativos'] += mensaje_negativos
+                        empresa_datos['neutros'] += mensaje_neutros
                         empresa_datos['total'] = empresa_datos['positivos'] + empresa_datos['negativos'] + empresa_datos['neutros']
 
                     # Chequeo de alias de cada servicio
@@ -280,16 +284,38 @@ def analizar_mensajes():
                         # Verificar cada alias en el mensaje
                         for alias in servicio['aliases']:
                             if alias in texto_mensaje:
-                                servicio_datos['positivos'] = positivos
-                                servicio_datos['negativos'] = negativos
-                                servicio_datos['neutros'] = neutros
+                                servicio_datos['positivos'] = mensaje_positivos
+                                servicio_datos['negativos'] = mensaje_negativos
+                                servicio_datos['neutros'] = mensaje_neutros
                                 servicio_datos['total'] = servicio_datos['positivos'] + servicio_datos['negativos'] + servicio_datos['neutros']
+
+                                # Acumular en el total de la empresa y del mensaje
+                                empresa_datos['positivos'] += servicio_datos['positivos']
+                                empresa_datos['negativos'] += servicio_datos['negativos']
+                                empresa_datos['neutros'] += servicio_datos['neutros']
 
                         if servicio_datos['total'] > 0:
                             empresa_datos['servicios'].append(servicio_datos)
 
                     if empresa_datos['total'] > 0 or any(s['total'] > 0 for s in empresa_datos['servicios']):
                         resultado_analisis['empresa_analisis'].append(empresa_datos)
+
+                # Ajustar los valores acumulativos para el total general de positivos, negativos y neutros de empresas y servicios
+                total_positivos = sum(e['positivos'] for e in resultado_analisis['empresa_analisis'])
+                total_negativos = sum(e['negativos'] for e in resultado_analisis['empresa_analisis'])
+                total_neutros = sum(e['neutros'] for e in resultado_analisis['empresa_analisis'])
+
+                for empresa in resultado_analisis['empresa_analisis']:
+                    for servicio in empresa['servicios']:
+                        total_positivos += servicio['positivos']
+                        total_negativos += servicio['negativos']
+                        total_neutros += servicio['neutros']
+
+                # Asignar los totales acumulados a los primeros contadores en la respuesta
+                resultado_analisis['positivos'] = total_positivos
+                resultado_analisis['negativos'] = total_negativos
+                resultado_analisis['neutros'] = total_neutros
+                resultado_analisis['total'] = total_positivos + total_negativos + total_neutros
 
                 # Agregar el resultado al listado de respuestas
                 respuestas.append(resultado_analisis)

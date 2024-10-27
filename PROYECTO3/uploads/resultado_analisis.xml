@@ -3,8 +3,8 @@
     <respuesta>
         <fecha>01/04/2022 15:01</fecha>
         <mensajes>
-            <total>1</total>
-            <positivos>1</positivos>
+            <total>3</total>
+            <positivos>3</positivos>
             <negativos>0</negativos>
             <neutros>0</neutros>
         </mensajes>
@@ -12,20 +12,29 @@
             <empresa nombre="USAC">
                 <mensajes>
                     <total>1</total>
-                    <positivos>1</positivos>
+                    <positivos>2</positivos>
                     <negativos>0</negativos>
                     <neutros>0</neutros>
                 </mensajes>
-                <servicios />
+                <servicios>
+                    <servicio nombre="inscripción">
+                        <mensajes>
+                            <total>1</total>
+                            <positivos>1</positivos>
+                            <negativos>0</negativos>
+                            <neutros>0</neutros>
+                        </mensajes>
+                    </servicio>
+                </servicios>
             </empresa>
         </analisis>
     </respuesta>
     <respuesta>
         <fecha>01/04/2022 15:20</fecha>
         <mensajes>
-            <total>1</total>
+            <total>3</total>
             <positivos>0</positivos>
-            <negativos>1</negativos>
+            <negativos>3</negativos>
             <neutros>0</neutros>
         </mensajes>
         <analisis>
@@ -33,7 +42,7 @@
                 <mensajes>
                     <total>1</total>
                     <positivos>0</positivos>
-                    <negativos>1</negativos>
+                    <negativos>2</negativos>
                     <neutros>0</neutros>
                 </mensajes>
                 <servicios>
@@ -52,9 +61,9 @@
     <respuesta>
         <fecha>05/04/2022 15:43</fecha>
         <mensajes>
-            <total>1</total>
+            <total>3</total>
             <positivos>0</positivos>
-            <negativos>1</negativos>
+            <negativos>3</negativos>
             <neutros>0</neutros>
         </mensajes>
         <analisis>
@@ -62,7 +71,7 @@
                 <mensajes>
                     <total>1</total>
                     <positivos>0</positivos>
-                    <negativos>1</negativos>
+                    <negativos>2</negativos>
                     <neutros>0</neutros>
                 </mensajes>
                 <servicios>
