@@ -29,18 +29,31 @@ def cargar_archivo(request):
     elif request.method == 'POST' and 'archivo' in request.FILES:
         # Cargar archivo XML y enviar a Flask
         archivo = request.FILES['archivo']
-        respuesta = requests.post(
-            'http://127.0.0.1:5000/cargar_archivo',
-            files={'archivo': archivo}
-        )
-        
-        # Procesar la respuesta de Flask para obtener contenido y ruta
-        if respuesta.status_code == 200:
-            data = respuesta.json()
-            request.session['contenido_xml'] = data.get('contenido_xml', '')
-            request.session['archivo_info'] = data.get('ruta_archivo', '')
-        else:
-            request.session['contenido_xml'] = "Error al cargar el archivo."
+        print("Enviando archivo:", archivo.name)  # Log para verificar el archivo
+
+        try:
+            respuesta = requests.post(
+                'http://127.0.0.1:5000/cargar_archivo',
+                files={'archivo': archivo}
+            )
+            print("Respuesta del servidor:", respuesta.status_code)  # Log del código de estado
+
+            # Procesar la respuesta de Flask para obtener contenido y ruta
+            if respuesta.status_code == 200:
+                data = respuesta.json()
+                request.session['contenido_xml'] = data.get('contenido_xml', '')
+                request.session['archivo_info'] = data.get('ruta_archivo', '')
+            else:
+                # Captura el mensaje de error del servidor
+                error_message = respuesta.json().get('error', 'Error desconocido')
+                print("Error al cargar el archivo:", error_message)  # Log del error
+                request.session['contenido_xml'] = "Error al cargar el archivo: " + error_message
+                request.session['archivo_info'] = ''
+
+        except requests.exceptions.RequestException as e:
+            # Manejar excepciones de la solicitud
+            print("Error al hacer la solicitud a Flask:", str(e))
+            request.session['contenido_xml'] = "Error de conexión con el servidor Flask."
             request.session['archivo_info'] = ''
 
     # Renderizar la plantilla con los datos actuales desde la sesión

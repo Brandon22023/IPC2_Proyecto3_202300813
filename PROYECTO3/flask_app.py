@@ -1,61 +1,77 @@
 from flask import Flask, request, jsonify
 import os
 import json
+import traceback
 app = Flask(__name__)
 UPLOAD_FOLDER = './uploads'  # Carpeta donde se guardarán los archivos
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+archivo_cargado = False  # Variable para rastrear si el archivo ya fue cargado
+
 @app.route('/cargar_archivo', methods=['POST'])
 def cargar_archivo():
+    global archivo_cargado  # Utiliza la variable global
+
     try:
-        print("Paso 1: Iniciando carga de archivo")
+        if archivo_cargado:  # Si ya se cargó un archivo, retorna un mensaje
+            return jsonify({'mensaje': 'Ya se ha cargado un archivo previamente.'}), 200
+        else:
+            print("Paso 1: Iniciando carga de archivo")
+            
+            # Intenta acceder al archivo
+            archivo_global = request.files.get('archivo')
 
-        # Verificar que el archivo esté en la solicitud y se pueda leer
-        if 'archivo' not in request.files:
-            print("Error: No se encontró el archivo en la solicitud")
-            return jsonify({'error': 'No se encontró archivo en la solicitud'}), 400
+            if archivo_global is None:
+                return jsonify({'error': 'No se ha enviado ningún archivo'}), 200
 
-        # Guardar el archivo XML
-        archivo = request.files['archivo']
-        print("Paso 2: Archivo recibido en la solicitud:", archivo)
+            if archivo_global.filename == '':
+                return jsonify({'error': 'No se ha seleccionado ningún archivo'}), 200
 
-        ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
-        archivo.save(ruta_archivo_xml)
-        print("Paso 3: Archivo guardado en la ruta:", ruta_archivo_xml)
+            if not archivo_global.filename.endswith('.xml'):
+                return jsonify({'error': 'El archivo debe ser un archivo XML'}), 200
 
-        # Leer el contenido del archivo XML guardado
-        with open(ruta_archivo_xml, 'r', encoding='utf-8') as file:
-            contenido_xml = file.read()
-        print("Paso 4: Contenido del archivo XML leído")
+            ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
+            
+            if not os.path.exists(UPLOAD_FOLDER):
+                os.makedirs(UPLOAD_FOLDER)
 
-        # Crear el contenido JSON y definir la ruta para el archivo JSON
-        contenido_json = {
-            'mensaje': 'Archivo cargado con éxito',
-            'contenido_xml': contenido_xml,
-            'ruta_archivo': os.path.abspath(ruta_archivo_xml)
-        }
-        ruta_archivo_json = os.path.join(UPLOAD_FOLDER, 'archivo_info.json')
-        print("Paso 5: Preparación del contenido JSON completada")
+            archivo_global.save(ruta_archivo_xml)
+            archivo_cargado = True  # Marcar que el archivo ha sido cargado
+            print(f"Paso 3: Archivo guardado en la ruta: {ruta_archivo_xml}")
 
-        # Guardar el archivo JSON
-        with open(ruta_archivo_json, 'w', encoding='utf-8') as json_file:
-            json.dump(contenido_json, json_file, ensure_ascii=False, indent=4)
-        print("Paso 6: Archivo JSON guardado en la ruta:", ruta_archivo_json)
+            # Leer el contenido del archivo XML guardado
+            with open(ruta_archivo_xml, 'r', encoding='utf-8') as file:
+                contenido_xml = file.read()
+            print("Paso 4: Contenido del archivo XML leído")
 
-        # Verificar si el archivo JSON fue creado exitosamente
-        if not os.path.exists(ruta_archivo_json):
-            print("Error: El archivo JSON no fue creado")
-            return jsonify({'error': 'Hubo un problema al crear el archivo JSON'}), 500
-        print("Paso 7: Verificación del archivo JSON completada")
+            # Crear el contenido JSON y definir la ruta para el archivo JSON
+            contenido_json = {
+                'mensaje': 'Archivo cargado con éxito',
+                'contenido_xml': contenido_xml,
+                'ruta_archivo': os.path.abspath(ruta_archivo_xml)
+            }
+            
+            ruta_archivo_json = os.path.join(UPLOAD_FOLDER, 'archivo_info.json')
+            
+            # Guardar el archivo JSON
+            with open(ruta_archivo_json, 'w', encoding='utf-8') as json_file:
+                json.dump(contenido_json, json_file, ensure_ascii=False, indent=4)
+            print(f"Paso 6: Archivo JSON guardado en la ruta: {ruta_archivo_json}")
 
-        # Retornar el contenido JSON como respuesta si se creó correctamente
-        print("Paso 8: Retornando el contenido JSON como respuesta")
-        return jsonify(contenido_json), 200
+            # Verificar la existencia del archivo JSON
+            if not os.path.exists(ruta_archivo_json):
+                return jsonify({'error': 'Hubo un problema al crear el archivo JSON'}), 500
+
+            print("Paso 7: Verificación del archivo JSON completada")
+            
+            # Devolver el contenido JSON en la respuesta
+            return jsonify(contenido_json), 200
 
     except Exception as e:
-        # Imprimir el error exacto para rastrear dónde ocurre
-        print("Error inesperado al procesar el archivo:", str(e))
-        return jsonify({'error': f"Error inesperado: {str(e)}"}), 500
+        print("Error inesperado:", e)
+        print(traceback.format_exc())  # Imprime el traceback del error
+        return jsonify({'error': str(e)}), 500
+    
 @app.route('/modelo', methods=['POST'])
 def modelo():
     print("Recibiendo solicitud...")  
