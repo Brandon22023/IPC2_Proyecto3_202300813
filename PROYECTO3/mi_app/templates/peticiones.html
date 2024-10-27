@@ -2,9 +2,62 @@
 
 {% block content %}
 <h1>Peticiones</h1>
-<p>consultar datos</p>
-<p>Resumen de clasificacion por fecha</p>
-<p>resumen por rango de fechas</p>
-<p>Reporte en PDF</p>
-<p>Prueba de mensaje</p>
+<style>
+    /* Estilos para centrar el contenido */
+    h2, p {
+        text-align: center; /* Centrar el texto */
+    }
+    /* Estilos para los botones */
+    form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    button {
+        background-color: #4CAF50; /* Verde */
+        color: white;
+        border: none;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #645fd1; /* Verde más oscuro en hover */
+    }
+
+    /* Puedes agregar estilos específicos para cada botón */
+    button[name="modelo_texto"][value="modelo1"] {
+        background-color: #72aedc; /* Azul */
+    }
+
+    button[name="modelo_texto"][value="modelo1"]:hover {
+        background-color: #3383c1; /* Azul más oscuro en hover */
+    }
+
+    button[name="modelo_texto"][value="modelo2"] {
+        background-color: #72aedc; /* Rojo */
+    }
+
+    button[name="modelo_texto"][value="modelo2"]:hover {
+        background-color: #3383c1; /* Rojo más oscuro en hover */
+    }
+</style>
+<!-- Botones para cargar modelos -->
+<form action="{% url 'ayuda' %}" method="post">  <!-- Cambiar a POST -->
+    {% csrf_token %}  <!-- Asegúrate de incluir el token CSRF -->
+    <button type="submit" name="modelo_texto" value="modelo1">consultar datos</button>
+    <button type="submit" name="modelo_texto" value="modelo2">Resumen de clasificacion por fecha</button>
+    <button type="submit" name="modelo_texto" value="modelo3">resumen por rango de fechas</button>
+    <button type="submit" name="modelo_texto" value="modelo4">Resumen de clasificacion por fecha</button>
+    <button type="submit" name="modelo_texto" value="modelo5">Reporte en PDF</button>
+    <button type="submit" name="modelo_texto" value="modelo6">Prueba de mensaje</button>
+</form>
 {% endblock %}

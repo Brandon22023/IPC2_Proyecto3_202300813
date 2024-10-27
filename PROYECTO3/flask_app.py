@@ -1,11 +1,12 @@
 import datetime
 import re
-from flask import Flask, request, jsonify, session
+from flask import Flask, Response, request, jsonify, session
 import os
 import json
 from collections import Counter, defaultdict
 import traceback
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
 app = Flask(__name__)
 UPLOAD_FOLDER = './uploads'  # Carpeta donde se guardarán los archivos
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -19,19 +20,34 @@ def cargar_archivo():
 
     try:
         # Si ya se cargó un archivo, retorna un mensaje
+        # Si ya se cargó un archivo, retorna un mensaje
+        # Si ya se cargó un archivo, retorna un mensaje
         if archivo_cargado:
             archivo_cargado = False
-            print("el archivo_cargado es:", archivo_cargado)
-            ruta_archivo_json = os.path.join(UPLOAD_FOLDER, 'archivo_info.json')
-            # Verifica si el archivo JSON existe y lee su contenido
-            if os.path.exists(ruta_archivo_json):
-                with open(ruta_archivo_json, 'r', encoding='utf-8') as json_file:
-                    contenido_json = json.load(json_file)  # Cargar el contenido del JSON
-                print("Contenido del archivo JSON:", contenido_json)  # Log para verificar el contenido
-                return jsonify({'mensaje': 'Ya se ha cargado un archivo previamente.', 'contenido_json': contenido_json}), 200
+            print("El estado de archivo_cargado es:", archivo_cargado)
+            
+            # Ruta del archivo JSON a leer
+            ruta_json_completa = os.path.join(UPLOAD_FOLDER, 'resultado_analisis.json')
+            
+            # Verificar si el archivo JSON existe y leer su contenido
+            if os.path.exists(ruta_json_completa):
+                try:
+                    with open(ruta_json_completa, 'r', encoding='utf-8') as archivo_json:
+                        contenido_completo_json = archivo_json.read()  # Leer el archivo completo como texto
+                    
+                    print("Contenido completo del archivo JSON:", contenido_completo_json)  # Log para verificación
+                    
+                    # Devolver el contenido del JSON como respuesta directa
+                    return Response(contenido_completo_json, mimetype='application/json'), 200
+                except Exception as e:
+                    print(f"Error al leer el archivo JSON: {e}")
+                    return jsonify({'error': 'No se pudo leer el archivo JSON.'}), 500
             else:
                 return jsonify({'error': 'El archivo JSON no existe'}), 404
-            
+
+
+
+
         else:
             print("Paso 1: Iniciando carga de archivo")
             
@@ -369,9 +385,14 @@ def analizar_mensajes():
                     ET.SubElement(mensajes_servicio, "negativos").text = str(servicio['negativos'])
                     ET.SubElement(mensajes_servicio, "neutros").text = str(servicio['neutros'])
 
-        # Guardar el resultado en el archivo de salida
-        tree_respuesta = ET.ElementTree(root_respuesta)
-        tree_respuesta.write('./uploads/resultado_analisis.xml', encoding="utf-8", xml_declaration=True)
+        # Guardar el resultado en el archivo de salida con formato
+        xml_str = ET.tostring(root_respuesta, encoding="utf-8")
+        parsed_str = minidom.parseString(xml_str).toprettyxml(indent="  ")
+        with open('./uploads/resultado_analisis.xml', 'w', encoding='utf-8') as f:
+            f.write(parsed_str)
+        # Guardar el resultado en un archivo JSON
+        with open('./uploads/resultado_analisis.json', 'w', encoding='utf-8') as f:
+            json.dump(respuestas, f, ensure_ascii=False, indent=2)
         print("Proceso de análisis y escritura del archivo completado correctamente.")
 
     except Exception as e:
