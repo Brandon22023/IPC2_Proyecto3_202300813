@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, session
 import os
 import json
 import traceback
+import xml.etree.ElementTree as ET
 app = Flask(__name__)
 UPLOAD_FOLDER = './uploads'  # Carpeta donde se guardarán los archivos
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -74,16 +75,193 @@ def cargar_archivo():
                 return jsonify({'error': 'Hubo un problema al crear el archivo JSON'}), 500
 
             print("Paso 7: Verificación del archivo JSON completada")
-            archivo_cargado = True
+            #archivo_cargado = True
             print("el archiov cargado es:", archivo_cargado)
+            #leer_y_mostrar_archivo()
+            obtener_sentimientos()
+            # Llamar directamente al método y mostrar la lista de empresas y servicios
+            lista_empresas = cargar_empresas_desde_xml()
+            lista_empresas.imprimir()
             # Devolver el contenido JSON en la respuesta
             return jsonify(contenido_json), 200
+            
             
 
     except Exception as e:
         print("Error inesperado:", e)
         print(traceback.format_exc())  # Imprime el traceback del error
         return jsonify({'error': str(e)}), 500
+
+def leer_y_mostrar_archivo():
+    try:
+        # Define la ruta del archivo XML
+        ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
+        
+        # Verifica si el archivo existe
+        if not os.path.exists(ruta_archivo_xml):
+            print("El archivo XML no existe en la ruta especificada.")
+            return
+        
+        # Lee el contenido del archivo XML
+        with open(ruta_archivo_xml, 'r', encoding='utf-8') as file:
+            contenido_xml = file.read()
+        
+        # Imprime el contenido en la consola
+        print("Contenido del archivo XML:")
+        print(contenido_xml)
+        
+    except Exception as e:
+        print("Error al leer el archivo:", e)
+def obtener_sentimientos():
+    ruta_archivo_xml = './uploads/entrada_mandado_flask.xml'
+    
+    # Verifica si el archivo XML existe
+    if not os.path.exists(ruta_archivo_xml):
+        print("El archivo XML no existe en la ruta especificada.")
+        return [], []
+
+    try:
+        # Cargar y parsear el archivo XML
+        tree = ET.parse(ruta_archivo_xml)
+        root = tree.getroot()
+
+        # Inicializar listas para los sentimientos
+        sentimientos_positivos = []
+        sentimientos_negativos = []
+
+        # Encontrar el diccionario en el XML
+        diccionario = root.find('diccionario')
+        if diccionario is not None:
+            # Extraer sentimientos positivos
+            positivos = diccionario.find('sentimientos_positivos')
+            if positivos is not None:
+                for palabra in positivos.findall('palabra'):
+                    sentimientos_positivos.append(palabra.text.strip())
+
+            # Extraer sentimientos negativos
+            negativos = diccionario.find('sentimientos_negativos')
+            if negativos is not None:
+                for palabra in negativos.findall('palabra'):
+                    sentimientos_negativos.append(palabra.text.strip())
+
+        # Mostrar resultados
+        print("Sentimientos positivos:", sentimientos_positivos)
+        print("Sentimientos negativos:", sentimientos_negativos)
+
+        return sentimientos_positivos, sentimientos_negativos
+
+    except ET.ParseError as e:
+        print("Error al parsear el archivo XML:", e)
+        return [], []
+    except Exception as e:
+        print("Error inesperado:", e)
+        return [], []
+    
+# Nodo para los servicios de una empresa (con lista de alias)
+class Servicio:
+    def __init__(self, nombre):
+        self.nombre = nombre
+        self.aliases = []  # Lista de alias para el servicio
+        self.next = None   # Apunta al siguiente servicio en la lista circular
+
+    def agregar_alias(self, alias):
+        self.aliases.append(alias)
+
+
+# Nodo para cada empresa (con una lista circular de servicios)
+class Empresa:
+    def __init__(self, nombre):
+        self.nombre = nombre
+        self.servicios = None  # Lista circular de servicios
+        self.next = None       # Apunta a la siguiente empresa en la lista circular
+
+    def agregar_servicio(self, servicio):
+        if self.servicios is None:
+            self.servicios = servicio
+            servicio.next = servicio  # Enlaza a sí mismo, formando la circularidad
+        else:
+            # Inserta el servicio al final de la lista circular de servicios
+            ultimo_servicio = self.servicios
+            while ultimo_servicio.next != self.servicios:
+                ultimo_servicio = ultimo_servicio.next
+            ultimo_servicio.next = servicio
+            servicio.next = self.servicios
+
+
+# Lista circular de empresas
+class ListaCircular:
+    def __init__(self):
+        self.primero = None
+
+    def agregar_empresa(self, empresa):
+        if self.primero is None:
+            self.primero = empresa
+            empresa.next = empresa  # Enlaza a sí misma, formando la circularidad
+        else:
+            # Inserta la empresa al final de la lista circular de empresas
+            ultima_empresa = self.primero
+            while ultima_empresa.next != self.primero:
+                ultima_empresa = ultima_empresa.next
+            ultima_empresa.next = empresa
+            empresa.next = self.primero
+
+    def imprimir(self):
+        if self.primero is None:
+            print("La lista de empresas está vacía.")
+            return
+        actual = self.primero
+        while True:
+            print(f"Empresa: {actual.nombre}")
+            servicio_actual = actual.servicios
+            if servicio_actual:
+                while True:
+                    print(f"  Servicio: {servicio_actual.nombre}")
+                    print(f"    Alias: {', '.join(servicio_actual.aliases)}")
+                    servicio_actual = servicio_actual.next
+                    if servicio_actual == actual.servicios:
+                        break
+            actual = actual.next
+            if actual == self.primero:
+                break
+
+
+# Función para cargar empresas y servicios desde el XML (sin parámetros)
+def cargar_empresas_desde_xml():
+    # Define la ruta del archivo XML
+    UPLOAD_FOLDER = './uploads'  # Asegúrate de definir la ruta donde se almacena el archivo
+    ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
+    
+    # Cargar el archivo XML y parsear
+    tree = ET.parse(ruta_archivo_xml)
+    root = tree.getroot()
+
+    lista_empresas = ListaCircular()
+    
+    # Navega hasta la sección de empresas en el XML
+    empresas_element = root.find('diccionario/empresas_analizar')
+    if empresas_element is not None:
+        for empresa_element in empresas_element.findall('empresa'):
+            nombre_empresa = empresa_element.find('nombre').text
+            empresa = Empresa(nombre_empresa)
+            
+            # Procesa los servicios de la empresa
+            for servicio_element in empresa_element.findall('servicio'):
+                nombre_servicio = servicio_element.get('nombre')
+                servicio = Servicio(nombre_servicio)
+                
+                # Agrega los alias al servicio
+                for alias_element in servicio_element.findall('alias'):
+                    alias_texto = alias_element.text.strip()
+                    servicio.agregar_alias(alias_texto)
+                
+                # Agrega el servicio a la empresa
+                empresa.agregar_servicio(servicio)
+            
+            # Agrega la empresa a la lista circular de empresas
+            lista_empresas.agregar_empresa(empresa)
+
+    return lista_empresas
+
     
 @app.route('/modelo', methods=['POST'])
 def modelo():
