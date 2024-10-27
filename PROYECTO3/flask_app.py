@@ -1,3 +1,4 @@
+import re
 from flask import Flask, request, jsonify, session
 import os
 import json
@@ -82,6 +83,8 @@ def cargar_archivo():
             # Llamar directamente al método y mostrar la lista de empresas y servicios
             lista_empresas = cargar_empresas_desde_xml()
             lista_empresas.imprimir()
+            # Llamar al método para analizar y mostrar mensajes
+            analizar_mensajes()
             # Devolver el contenido JSON en la respuesta
             return jsonify(contenido_json), 200
             
@@ -112,6 +115,7 @@ def leer_y_mostrar_archivo():
         
     except Exception as e:
         print("Error al leer el archivo:", e)
+# Método para obtener sentimientos positivos y negativos
 def obtener_sentimientos():
     ruta_archivo_xml = './uploads/entrada_mandado_flask.xml'
     
@@ -144,10 +148,6 @@ def obtener_sentimientos():
                 for palabra in negativos.findall('palabra'):
                     sentimientos_negativos.append(palabra.text.strip())
 
-        # Mostrar resultados
-        print("Sentimientos positivos:", sentimientos_positivos)
-        print("Sentimientos negativos:", sentimientos_negativos)
-
         return sentimientos_positivos, sentimientos_negativos
 
     except ET.ParseError as e:
@@ -156,6 +156,103 @@ def obtener_sentimientos():
     except Exception as e:
         print("Error inesperado:", e)
         return [], []
+    
+# Método para analizar mensajes y contar sentimientos
+def analizar_mensajes():
+    # Cargar sentimientos desde el archivo XML
+    sentimientos_positivos, sentimientos_negativos = obtener_sentimientos()
+    
+    ruta_archivo_xml = './uploads/entrada_mandado_flask.xml'
+    
+    if not os.path.exists(ruta_archivo_xml):
+        print("El archivo XML no existe en la ruta especificada.")
+        return
+
+    try:
+        tree = ET.parse(ruta_archivo_xml)
+        root = tree.getroot()
+        
+        # Diccionario para almacenar mensajes clasificados por fecha
+        mensajes_por_fecha = {}
+        
+        # Contadores para total de mensajes positivos, negativos y neutros
+        total_positivos = 0
+        total_negativos = 0
+        total_neutros = 0
+
+        # Contadores para el total absoluto de sentimientos
+        total_sentimientos_positivos = 0
+        total_sentimientos_negativos = 0
+        total_sentimientos_neutros = 0
+
+        # Procesa cada mensaje en la lista de mensajes
+        lista_mensajes = root.find('lista_mensajes')
+        if lista_mensajes is not None:
+            for mensaje_element in lista_mensajes.findall('mensaje'):
+                mensaje_texto = mensaje_element.text.strip()
+                
+                # Extraer la fecha y el lugar usando una expresión regular
+                fecha_lugar_match = re.search(r"Lugar y fecha:\s*([^,]+),\s*(\d{2}/\d{2}/\d{4})", mensaje_texto)
+                if fecha_lugar_match:
+                    lugar = fecha_lugar_match.group(1)
+                    fecha = fecha_lugar_match.group(2)
+                else:
+                    lugar, fecha = "Desconocido", "Fecha desconocida"
+
+                # Contar sentimientos en el mensaje
+                positivos_count = sum(1 for palabra in sentimientos_positivos if re.search(r'\b' + re.escape(palabra) + r'\b', mensaje_texto, re.IGNORECASE))
+                negativos_count = sum(1 for palabra in sentimientos_negativos if re.search(r'\b' + re.escape(palabra) + r'\b', mensaje_texto, re.IGNORECASE))
+
+                # Clasificar el mensaje como positivo, negativo o neutro
+                if positivos_count > negativos_count:
+                    total_positivos += 1
+                elif negativos_count > positivos_count:
+                    total_negativos += 1
+                else:
+                    total_neutros += 1
+                    total_sentimientos_neutros += 1  # Contador de mensajes neutros totales
+
+                # Actualizar los totales absolutos de sentimientos
+                total_sentimientos_positivos += positivos_count
+                total_sentimientos_negativos += negativos_count
+
+                # Organizar el mensaje por fecha en el diccionario
+                if fecha not in mensajes_por_fecha:
+                    mensajes_por_fecha[fecha] = []
+                
+                mensajes_por_fecha[fecha].append({
+                    "lugar": lugar,
+                    "mensaje": mensaje_texto,
+                    "positivos_count": positivos_count,
+                    "negativos_count": negativos_count
+                })
+        
+        # Imprimir los resultados
+        for fecha, mensajes in mensajes_por_fecha.items():
+            print(f"\nFecha: {fecha}")
+            for mensaje in mensajes:
+                print(f"Lugar: {mensaje['lugar']}")
+                print(f"Mensaje: {mensaje['mensaje']}")
+                print(f"Sentimientos positivos en el mensaje: {mensaje['positivos_count']}")
+                print(f"Sentimientos negativos en el mensaje: {mensaje['negativos_count']}")
+
+        # Imprimir totales de mensajes y total absoluto de sentimientos
+        print(f"\nTotal de mensajes positivos: {total_positivos}")
+        print(f"Total de mensajes negativos: {total_negativos}")
+        print(f"Total de mensajes neutros: {total_neutros}")
+        print(f"Total absoluto de sentimientos positivos encontrados: {total_sentimientos_positivos}")
+        print(f"Total absoluto de sentimientos negativos encontrados: {total_sentimientos_negativos}")
+        print(f"Total absoluto de mensajes neutros: {total_sentimientos_neutros}")
+
+    except ET.ParseError as e:
+        print("Error al parsear el archivo XML:", e)
+    except Exception as e:
+        print("Error inesperado:", e)
+
+
+
+
+
     
 # Nodo para los servicios de una empresa (con lista de alias)
 class Servicio:
