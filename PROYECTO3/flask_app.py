@@ -150,6 +150,13 @@ def obtener_sentimientos():
                 for palabra in negativos.findall('palabra'):
                     sentimientos_negativos.append(palabra.text.strip())
 
+        # Imprimir las listas de sentimientos
+        print("Sentimientos Positivos:")
+        print(sentimientos_positivos)
+        
+        print("Sentimientos Negativos:")
+        print(sentimientos_negativos)
+
         return sentimientos_positivos, sentimientos_negativos
 
     except ET.ParseError as e:
@@ -158,6 +165,7 @@ def obtener_sentimientos():
     except Exception as e:
         print("Error inesperado:", e)
         return [], []
+
 
 
 def cargar_empresas_desde_xml():
@@ -293,6 +301,7 @@ def analizar_mensajes():
                                 empresa_datos['positivos'] += servicio_datos['positivos']
                                 empresa_datos['negativos'] += servicio_datos['negativos']
                                 empresa_datos['neutros'] += servicio_datos['neutros']
+                                empresa_datos['total'] = empresa_datos['positivos'] + empresa_datos['negativos'] + empresa_datos['neutros']
 
                         if servicio_datos['total'] > 0:
                             empresa_datos['servicios'].append(servicio_datos)
@@ -341,6 +350,8 @@ def analizar_mensajes():
                 empresa_elemento = ET.SubElement(analisis_elemento, "empresa", nombre=empresa_datos['nombre'])
 
                 mensajes_empresa = ET.SubElement(empresa_elemento, "mensajes")
+                # Actualizar el total para la empresa basado en la suma de positivos, negativos y neutros
+                empresa_datos['total'] = empresa_datos['positivos'] + empresa_datos['negativos'] + empresa_datos['neutros']
                 ET.SubElement(mensajes_empresa, "total").text = str(empresa_datos['total'])
                 ET.SubElement(mensajes_empresa, "positivos").text = str(empresa_datos['positivos'])
                 ET.SubElement(mensajes_empresa, "negativos").text = str(empresa_datos['negativos'])
@@ -351,6 +362,8 @@ def analizar_mensajes():
                     servicio_elemento = ET.SubElement(servicios_elemento, "servicio", nombre=servicio['nombre'])
 
                     mensajes_servicio = ET.SubElement(servicio_elemento, "mensajes")
+                    # Actualizar el total para el servicio basado en la suma de positivos, negativos y neutros
+                    servicio['total'] = servicio['positivos'] + servicio['negativos'] + servicio['neutros']
                     ET.SubElement(mensajes_servicio, "total").text = str(servicio['total'])
                     ET.SubElement(mensajes_servicio, "positivos").text = str(servicio['positivos'])
                     ET.SubElement(mensajes_servicio, "negativos").text = str(servicio['negativos'])
@@ -359,12 +372,8 @@ def analizar_mensajes():
         # Guardar el resultado en el archivo de salida
         tree_respuesta = ET.ElementTree(root_respuesta)
         tree_respuesta.write('./uploads/resultado_analisis.xml', encoding="utf-8", xml_declaration=True)
-        print("Análisis completado y guardado en './uploads/resultado_analisis.xml'.")
+        print("Proceso de análisis y escritura del archivo completado correctamente.")
 
-    except ET.ParseError as e:
-        print(f"Error al parsear el archivo XML: {e}")
-    except FileNotFoundError:
-        print("Archivo de mensajes no encontrado.")
     except Exception as e:
         print(f"Error inesperado: {e}")
     

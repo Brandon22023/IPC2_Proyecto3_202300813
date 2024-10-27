@@ -11,7 +11,7 @@
         <analisis>
             <empresa nombre="USAC">
                 <mensajes>
-                    <total>1</total>
+                    <total>2</total>
                     <positivos>2</positivos>
                     <negativos>0</negativos>
                     <neutros>0</neutros>
@@ -40,7 +40,7 @@
         <analisis>
             <empresa nombre="USAC">
                 <mensajes>
-                    <total>1</total>
+                    <total>2</total>
                     <positivos>0</positivos>
                     <negativos>2</negativos>
                     <neutros>0</neutros>
@@ -69,7 +69,7 @@
         <analisis>
             <empresa nombre="USAC">
                 <mensajes>
-                    <total>1</total>
+                    <total>2</total>
                     <positivos>0</positivos>
                     <negativos>2</negativos>
                     <neutros>0</neutros>
