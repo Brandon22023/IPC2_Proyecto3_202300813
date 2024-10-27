@@ -1,20 +1,31 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 import os
 import json
 import traceback
 app = Flask(__name__)
 UPLOAD_FOLDER = './uploads'  # Carpeta donde se guardarán los archivos
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-archivo_cargado = False  # Variable para rastrear si el archivo ya fue cargado
-
+app.secret_key = 'your_secret_key'  # Necesario para usar sesiones
+archivo_cargado=False
 @app.route('/cargar_archivo', methods=['POST'])
 def cargar_archivo():
-    global archivo_cargado  # Utiliza la variable global
+    global archivo_cargado
 
     try:
-        if archivo_cargado:  # Si ya se cargó un archivo, retorna un mensaje
-            return jsonify({'mensaje': 'Ya se ha cargado un archivo previamente.'}), 200
+        # Si ya se cargó un archivo, retorna un mensaje
+        if archivo_cargado:
+            archivo_cargado = False
+            print("el archivo_cargado es:", archivo_cargado)
+            ruta_archivo_json = os.path.join(UPLOAD_FOLDER, 'archivo_info.json')
+            # Verifica si el archivo JSON existe y lee su contenido
+            if os.path.exists(ruta_archivo_json):
+                with open(ruta_archivo_json, 'r', encoding='utf-8') as json_file:
+                    contenido_json = json.load(json_file)  # Cargar el contenido del JSON
+                print("Contenido del archivo JSON:", contenido_json)  # Log para verificar el contenido
+                return jsonify({'mensaje': 'Ya se ha cargado un archivo previamente.', 'contenido_json': contenido_json}), 200
+            else:
+                return jsonify({'error': 'El archivo JSON no existe'}), 404
+            
         else:
             print("Paso 1: Iniciando carga de archivo")
             
@@ -22,13 +33,13 @@ def cargar_archivo():
             archivo_global = request.files.get('archivo')
 
             if archivo_global is None:
-                return jsonify({'error': 'No se ha enviado ningún archivo'}), 200
+                return jsonify({'error': 'No se ha enviado ningún archivo'}), 400
 
             if archivo_global.filename == '':
-                return jsonify({'error': 'No se ha seleccionado ningún archivo'}), 200
+                return jsonify({'error': 'No se ha seleccionado ningún archivo'}), 400
 
             if not archivo_global.filename.endswith('.xml'):
-                return jsonify({'error': 'El archivo debe ser un archivo XML'}), 200
+                return jsonify({'error': 'El archivo debe ser un archivo XML'}), 400
 
             ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
             
@@ -36,7 +47,7 @@ def cargar_archivo():
                 os.makedirs(UPLOAD_FOLDER)
 
             archivo_global.save(ruta_archivo_xml)
-            archivo_cargado = True  # Marcar que el archivo ha sido cargado
+            session['archivo_cargado'] = True  # Marcar que el archivo ha sido cargado
             print(f"Paso 3: Archivo guardado en la ruta: {ruta_archivo_xml}")
 
             # Leer el contenido del archivo XML guardado
@@ -63,9 +74,11 @@ def cargar_archivo():
                 return jsonify({'error': 'Hubo un problema al crear el archivo JSON'}), 500
 
             print("Paso 7: Verificación del archivo JSON completada")
-            
+            archivo_cargado = True
+            print("el archiov cargado es:", archivo_cargado)
             # Devolver el contenido JSON en la respuesta
             return jsonify(contenido_json), 200
+            
 
     except Exception as e:
         print("Error inesperado:", e)

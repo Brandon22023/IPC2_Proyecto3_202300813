@@ -7,7 +7,6 @@ from django.conf import settings
 import os
 
 # Vista para cargar datos (Cargar Archivo)
-
 def inicio(request):
     return render(request, 'inicio.html')# Vista para cargar datos (Cargar Archivo)
 # Vista para cargar el archivo y mostrar su contenido
@@ -19,6 +18,7 @@ def cargar_archivo(request):
         # Limpiar los datos de la sesión
         request.session['contenido_xml'] = ''
         request.session['archivo_info'] = ''
+        request.session['archivo_cargado'] = False  # Resetear estado de archivo cargado
         
         # Renderizar la plantilla sin datos
         return render(request, 'cargar_archivo.html', {
@@ -31,10 +31,15 @@ def cargar_archivo(request):
         archivo = request.FILES['archivo']
         print("Enviando archivo:", archivo.name)  # Log para verificar el archivo
 
+        # Obtener el estado del archivo cargado desde la sesión
+        archivo_cargado = request.session.get('archivo_cargado', False)
+
         try:
+            # Enviar archivo y el estado de archivo_cargado a Flask
             respuesta = requests.post(
                 'http://127.0.0.1:5000/cargar_archivo',
-                files={'archivo': archivo}
+                files={'archivo': archivo},
+                data={'archivo_cargado': archivo_cargado}  # Enviamos el estado
             )
             print("Respuesta del servidor:", respuesta.status_code)  # Log del código de estado
 
@@ -43,6 +48,7 @@ def cargar_archivo(request):
                 data = respuesta.json()
                 request.session['contenido_xml'] = data.get('contenido_xml', '')
                 request.session['archivo_info'] = data.get('ruta_archivo', '')
+                request.session['archivo_cargado'] = True  # Marcar como archivo cargado
             else:
                 # Captura el mensaje de error del servidor
                 error_message = respuesta.json().get('error', 'Error desconocido')
