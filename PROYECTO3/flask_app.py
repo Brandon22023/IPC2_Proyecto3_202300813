@@ -216,21 +216,20 @@ def analizar_mensajes():
 
             # Recorrer cada mensaje en lista_mensajes
             for mensaje in lista_mensajes.findall('mensaje'):
-                texto_mensaje = mensaje.text.strip().replace('\n', ' ')  # Unir líneas en un solo string
+                texto_mensaje = mensaje.text.strip().replace('\n', ' ')
                 fecha_mensaje = None
 
                 # Buscar la fecha usando expresiones regulares
                 fecha_match = re.search(r'(\d{2}/\d{2}/\d{4} \d{2}:\d{2})', texto_mensaje)
                 if fecha_match:
                     fecha_mensaje = fecha_match.group(1)
-                    # Limpiar el texto del mensaje para remover la parte de la fecha
                     texto_mensaje = re.sub(r'Lugar y fecha: .*?(\d{2}/\d{2}/\d{4} \d{2}:\d{2})', '', texto_mensaje)
 
                 # Contadores iniciales
                 positivos, negativos = 0, 0
 
                 # Contar palabras en el mensaje usando expresiones regulares
-                palabras = re.findall(r'\b\w+\b', texto_mensaje)  # Extrae palabras
+                palabras = re.findall(r'\b\w+\b', texto_mensaje)
                 for palabra in palabras:
                     if palabra in sentimientos_positivos:
                         positivos += 1
@@ -239,10 +238,11 @@ def analizar_mensajes():
 
                 # Calcular neutros
                 neutros = 1 if positivos == negativos and positivos > 0 else 0
+                total = positivos + negativos + neutros
 
                 resultado_analisis = {
                     'fecha': fecha_mensaje if fecha_mensaje else "Fecha no encontrada",
-                    'total': len(palabras),
+                    'total': total,
                     'positivos': positivos,
                     'negativos': negativos,
                     'neutros': neutros,
@@ -262,10 +262,10 @@ def analizar_mensajes():
 
                     # Chequeo del nombre de la empresa
                     if empresa['nombre'] in texto_mensaje:
-                        empresa_datos['total'] = len(palabras)
                         empresa_datos['positivos'] = positivos
                         empresa_datos['negativos'] = negativos
                         empresa_datos['neutros'] = neutros
+                        empresa_datos['total'] = empresa_datos['positivos'] + empresa_datos['negativos'] + empresa_datos['neutros']
 
                     # Chequeo de alias de cada servicio
                     for servicio in empresa['servicios']:
@@ -280,10 +280,10 @@ def analizar_mensajes():
                         # Verificar cada alias en el mensaje
                         for alias in servicio['aliases']:
                             if alias in texto_mensaje:
-                                servicio_datos['total'] = len(palabras)
                                 servicio_datos['positivos'] = positivos
                                 servicio_datos['negativos'] = negativos
                                 servicio_datos['neutros'] = neutros
+                                servicio_datos['total'] = servicio_datos['positivos'] + servicio_datos['negativos'] + servicio_datos['neutros']
 
                         if servicio_datos['total'] > 0:
                             empresa_datos['servicios'].append(servicio_datos)
@@ -302,7 +302,7 @@ def analizar_mensajes():
         root_respuesta = ET.Element("lista_respuestas")
         for respuesta in respuestas:
             respuesta_elemento = ET.SubElement(root_respuesta, "respuesta")
-            ET.SubElement(respuesta_elemento, "fecha").text = respuesta['fecha']  # Aquí se agrega la fecha
+            ET.SubElement(respuesta_elemento, "fecha").text = respuesta['fecha']
 
             mensajes_elemento = ET.SubElement(respuesta_elemento, "mensajes")
             ET.SubElement(mensajes_elemento, "total").text = str(respuesta['total'])
