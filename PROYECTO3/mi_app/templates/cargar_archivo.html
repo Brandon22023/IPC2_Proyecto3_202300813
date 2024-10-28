@@ -11,7 +11,7 @@
         
         <div class="column">
             <h3>Salida</h3>
-            <textarea id="salida" name="salida" rows="15" cols="40" placeholder="Aquí aparecerá el resultado procesado..."></textarea>
+            <textarea id="salida" name="salida" rows="15" cols="40" placeholder="Aquí aparecerá el resultado procesado...">{{ contenido_resultado_xml }}</textarea>
         </div>
     </div>
 
@@ -25,7 +25,7 @@
             <!-- Campo oculto para identificar la acción de reset -->
             <input type="hidden" name="reset" id="reset" value="false">
             <div class="buttons">
-                <button type="submit" class="mandarlo-txt">Cargar Archivo</button>
+                <button type="submit" class="mandarlo-txt">enviar</button>
                 <button type="submit" name="reset" value="reset" class="reset">Resetear</button>
             </div>
         </form>

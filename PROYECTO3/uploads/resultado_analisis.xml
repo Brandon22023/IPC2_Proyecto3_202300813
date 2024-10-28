@@ -3,31 +3,12 @@
   <respuesta>
     <fecha>01/04/2022 15:01</fecha>
     <mensajes>
-      <total>3</total>
-      <positivos>3</positivos>
+      <total>0</total>
+      <positivos>0</positivos>
       <negativos>0</negativos>
       <neutros>0</neutros>
     </mensajes>
-    <analisis>
-      <empresa nombre="USAC">
-        <mensajes>
-          <total>2</total>
-          <positivos>2</positivos>
-          <negativos>0</negativos>
-          <neutros>0</neutros>
-        </mensajes>
-        <servicios>
-          <servicio nombre="inscripción">
-            <mensajes>
-              <total>1</total>
-              <positivos>1</positivos>
-              <negativos>0</negativos>
-              <neutros>0</neutros>
-            </mensajes>
-          </servicio>
-        </servicios>
-      </empresa>
-    </analisis>
+    <analisis/>
   </respuesta>
   <respuesta>
     <fecha>01/04/2022 15:20</fecha>

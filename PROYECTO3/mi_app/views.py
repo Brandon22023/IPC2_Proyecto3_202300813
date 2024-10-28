@@ -18,12 +18,14 @@ def cargar_archivo(request):
         # Limpiar los datos de la sesión
         request.session['contenido_xml'] = ''
         request.session['archivo_info'] = ''
+        request.session['contenido_resultado_xml'] = ''
         request.session['archivo_cargado'] = False  # Resetear estado de archivo cargado
         
         # Renderizar la plantilla sin datos
         return render(request, 'cargar_archivo.html', {
             'contenido_xml': '',
-            'archivo_info': ''
+            'archivo_info': '',
+            'contenido_resultado_xml': ''
         })
     
     elif request.method == 'POST' and 'archivo' in request.FILES:
@@ -48,6 +50,7 @@ def cargar_archivo(request):
                 data = respuesta.json()
                 request.session['contenido_xml'] = data.get('contenido_xml', '')
                 request.session['archivo_info'] = data.get('ruta_archivo', '')
+                request.session['contenido_resultado_xml'] = data.get('contenido_resultado_xml', '')
                 request.session['archivo_cargado'] = True  # Marcar como archivo cargado
             else:
                 # Captura el mensaje de error del servidor
@@ -55,24 +58,56 @@ def cargar_archivo(request):
                 print("Error al cargar el archivo:", error_message)  # Log del error
                 request.session['contenido_xml'] = "Error al cargar el archivo: " + error_message
                 request.session['archivo_info'] = ''
+                request.session['contenido_resultado_xml'] = ''
 
         except requests.exceptions.RequestException as e:
             # Manejar excepciones de la solicitud
             print("Error al hacer la solicitud a Flask:", str(e))
             request.session['contenido_xml'] = "Error de conexión con el servidor Flask."
             request.session['archivo_info'] = ''
+            request.session['contenido_resultado_xml'] = ''
 
     # Renderizar la plantilla con los datos actuales desde la sesión
     return render(request, 'cargar_archivo.html', {
         'contenido_xml': request.session.get('contenido_xml', ''),
-        'archivo_info': request.session.get('archivo_info', '')
+        'archivo_info': request.session.get('archivo_info', ''),
+        'contenido_resultado_xml': request.session.get('contenido_resultado_xml', '')
     })
 
 
 def peticiones(request):
-    # Lógica de la vista aquí
-    return render(request, 'peticiones.html')
+    modelo_mensaje = None
+    mostrar_textarea = False  # Controla la visualización del textarea
+    contenido_resultado_xml = ""  # Contenido para el textarea
 
+    if request.method == 'POST':
+        modelo_texto = request.POST.get('modelo_texto')
+
+        if modelo_texto == 'modelo1':
+            modelo_mensaje = "Consultar datos seleccionado."
+            mostrar_textarea = True  # Activar textarea
+
+            try:
+                # Enviar solicitud a Flask y recibir contenido XML
+                response = requests.post('http://127.0.0.1:5000/consultar_datos')
+                
+                # Procesar la respuesta de Flask
+                if response.status_code == 200:
+                    contenido_resultado_xml = response.text  # Captura el contenido XML
+                else:
+                    contenido_resultado_xml = "Error al consultar datos en el servidor Flask."
+            except requests.exceptions.RequestException as e:
+                contenido_resultado_xml = f"Error de conexión: {e}"
+
+        elif modelo_texto == 'modelo2':
+            modelo_mensaje = "Resumen de clasificación por fecha seleccionado."
+        # Puedes continuar con los otros modelos como antes
+
+    return render(request, 'peticiones.html', {
+        'modelo_mensaje': modelo_mensaje,
+        'mostrar_textarea': mostrar_textarea,
+        'contenido_resultado_xml': contenido_resultado_xml
+    })
 
 # Vista para ver gráfico (Ayuda)
 def ayuda(request):

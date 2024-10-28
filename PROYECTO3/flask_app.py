@@ -1,6 +1,6 @@
 import datetime
 import re
-from flask import Flask, Response, request, jsonify, session
+from flask import Flask, Response, make_response, request, jsonify, session, send_file
 import os
 import json
 from collections import Counter, defaultdict
@@ -19,8 +19,6 @@ def cargar_archivo():
     global archivo_cargado
 
     try:
-        # Si ya se cargó un archivo, retorna un mensaje
-        # Si ya se cargó un archivo, retorna un mensaje
         # Si ya se cargó un archivo, retorna un mensaje
         if archivo_cargado:
             archivo_cargado = False
@@ -44,9 +42,6 @@ def cargar_archivo():
                     return jsonify({'error': 'No se pudo leer el archivo JSON.'}), 500
             else:
                 return jsonify({'error': 'El archivo JSON no existe'}), 404
-
-
-
 
         else:
             print("Paso 1: Iniciando carga de archivo")
@@ -98,16 +93,19 @@ def cargar_archivo():
             print("Paso 7: Verificación del archivo JSON completada")
             #archivo_cargado = True
             print("el archiov cargado es:", archivo_cargado)
-            #leer_y_mostrar_archivo()
-            #obtener_sentimientos()
-            #cargar_empresas_desde_xml()
-            # Llamar al método para analizar y mostrar mensajes
-            analizar_mensajes()
+            analizar_mensajes()  # Ejecutar el método para analizar mensajes
+
+            # Leer el archivo resultado_analisis.xml y enviarlo junto al JSON
+            ruta_resultado_analisis_xml = os.path.join(UPLOAD_FOLDER, 'resultado_analisis.xml')
+            with open(ruta_resultado_analisis_xml, 'r', encoding='utf-8') as resultado_file:
+                contenido_resultado_xml = resultado_file.read()
+
+            # Añadir el contenido del resultado a la respuesta
+            contenido_json['contenido_resultado_xml'] = contenido_resultado_xml
+
             # Devolver el contenido JSON en la respuesta
             return jsonify(contenido_json), 200
             
-            
-
     except Exception as e:
         print("Error inesperado:", e)
         print(traceback.format_exc())  # Imprime el traceback del error
@@ -397,7 +395,43 @@ def analizar_mensajes():
 
     except Exception as e:
         print(f"Error inesperado: {e}")
+
+
+@app.route('/consultar_datos', methods=['POST'])
+def consultar_datos():
+    # Ruta del archivo XML
+    ruta_xml = "./uploads/resultado_analisis.xml"
     
+    try:
+        # Leer el contenido del archivo XML
+        with open(ruta_xml, "r") as file:
+            contenido_xml = file.read()
+    except FileNotFoundError:
+        contenido_xml = "<error>No se encontró el archivo XML en la ruta especificada.</error>"
+    
+
+
+    # Devolver el contenido XML en la respuesta con el tipo de contenido adecuado
+    return Response(contenido_xml, mimetype='application/xml')
+ # # Ruta del archivo JSON a leer
+    # ruta_json_completa = os.path.join(UPLOAD_FOLDER, 'resultado_analisis.json')
+            
+    #         # Verificar si el archivo JSON existe y leer su contenido
+    # if os.path.exists(ruta_json_completa):
+    #     try:
+    #         with open(ruta_json_completa, 'r', encoding='utf-8') as archivo_json:
+    #             contenido_completo_json = archivo_json.read()  # Leer el archivo completo como texto
+                    
+    #         print("Contenido completo del archivo JSON:", contenido_completo_json)  # Log para verificación
+                    
+    #                 # Devolver el contenido del JSON como respuesta directa
+    #         return Response(contenido_completo_json, mimetype='application/json'), 200
+    #     except Exception as e:
+    #         print(f"Error al leer el archivo JSON: {e}")
+    #         return jsonify({'error': 'No se pudo leer el archivo JSON.'}), 500
+     
+
+
 @app.route('/modelo', methods=['POST'])
 def modelo():
     print("Recibiendo solicitud...")  

@@ -1,21 +1,29 @@
 {% extends 'inicio.html' %}
 
 {% block content %}
-<h1>Peticiones</h1>
+
 <style>
     /* Estilos para centrar el contenido */
     h2, p {
         text-align: center; /* Centrar el texto */
     }
+    /* Contenedor principal para el formulario y el textarea */
+    .contenedor-flex {
+        display: flex;
+        align-items: flex-start; /* Alinea los elementos en la parte superior */
+        gap: 20px; /* Espacio entre el formulario y el textarea */
+    }
+
     /* Estilos para los botones */
     form {
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start; /* Alinear los botones a la izquierda */
+        margin: 0; /* Eliminar el margen */
+        padding-left: 2px; /* Relleno a la izquierda (ajusta según necesites) */
     }
 
     button {
-        background-color: #4CAF50; /* Verde */
         color: white;
         border: none;
         padding: 15px 32px;
@@ -23,41 +31,101 @@
         text-decoration: none;
         display: inline-block;
         font-size: 16px;
-        margin: 10px;
+        margin: 10px 0; /* Margen vertical entre botones */
         cursor: pointer;
         border-radius: 8px;
         transition: background-color 0.3s ease;
     }
 
-    button:hover {
-        background-color: #645fd1; /* Verde más oscuro en hover */
-    }
-
-    /* Puedes agregar estilos específicos para cada botón */
+    /* Estilos específicos para cada botón */
     button[name="modelo_texto"][value="modelo1"] {
         background-color: #72aedc; /* Azul */
     }
 
     button[name="modelo_texto"][value="modelo1"]:hover {
-        background-color: #3383c1; /* Azul más oscuro en hover */
+        background-color:#3383c1; /* Azul más oscuro en hover */
     }
 
     button[name="modelo_texto"][value="modelo2"] {
-        background-color: #72aedc; /* Rojo */
+        background-color: #72aedc; /* Naranja */
     }
 
     button[name="modelo_texto"][value="modelo2"]:hover {
+        background-color: #3383c1; /* Naranja más oscuro en hover */
+    }
+
+    button[name="modelo_texto"][value="modelo3"] {
+        background-color: #72aedc; /* Púrpura */
+    }
+
+    button[name="modelo_texto"][value="modelo3"]:hover {
+        background-color: #3383c1; /* Púrpura más oscuro en hover */
+    }
+
+    button[name="modelo_texto"][value="modelo4"] {
+        background-color: #72aedc; /* Verde */
+    }
+
+    button[name="modelo_texto"][value="modelo4"]:hover {
+        background-color: #3383c1; /* Verde más oscuro en hover */
+    }
+
+    button[name="modelo_texto"][value="modelo5"] {
+        background-color: #72aedc; /* Rojo */
+    }
+
+    button[name="modelo_texto"][value="modelo5"]:hover {
         background-color: #3383c1; /* Rojo más oscuro en hover */
     }
+
+    button[name="modelo_texto"][value="modelo6"] {
+        background-color: #72aedc; /* Amarillo */
+    }
+
+    button[name="modelo_texto"][value="modelo6"]:hover {
+        background-color: #3383c1; /* Amarillo más oscuro en hover */
+    }/* Estilos para el textarea */
+    .column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    #salida {
+        width: 700px;
+        height: 600px;
+        padding: 10px;
+        font-size: 20px;
+    }
 </style>
-<!-- Botones para cargar modelos -->
-<form action="{% url 'ayuda' %}" method="post">  <!-- Cambiar a POST -->
-    {% csrf_token %}  <!-- Asegúrate de incluir el token CSRF -->
-    <button type="submit" name="modelo_texto" value="modelo1">consultar datos</button>
-    <button type="submit" name="modelo_texto" value="modelo2">Resumen de clasificacion por fecha</button>
-    <button type="submit" name="modelo_texto" value="modelo3">resumen por rango de fechas</button>
-    <button type="submit" name="modelo_texto" value="modelo4">Resumen de clasificacion por fecha</button>
-    <button type="submit" name="modelo_texto" value="modelo5">Reporte en PDF</button>
-    <button type="submit" name="modelo_texto" value="modelo6">Prueba de mensaje</button>
-</form>
+
+<div class="contenedor-flex">
+    <!-- Formulario con los botones -->
+    <form action="{% url 'peticiones' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" name="modelo_texto" value="modelo1">Consultar datos</button>
+        <button type="submit" name="modelo_texto" value="modelo2">Resumen de clasificación por fecha</button>
+        <button type="submit" name="modelo_texto" value="modelo3">Resumen por rango de fechas</button>
+        <button type="submit" name="modelo_texto" value="modelo4">Resumen de clasificación por fecha</button>
+        <button type="submit" name="modelo_texto" value="modelo5">Reporte en PDF</button>
+        <button type="submit" name="modelo_texto" value="modelo6">Prueba de mensaje</button>
+    </form>
+
+    <!-- Mostrar textarea solo cuando "Consultar datos" ha sido seleccionado -->
+    {% if mostrar_textarea %}
+        <div class="column">
+            <h3>Salida</h3>
+            <textarea id="salida" name="salida" placeholder="Aquí aparecerá el resultado procesado...">{{ contenido_resultado_xml }}</textarea>
+        </div>
+    {% endif %}
+</div>
+
+{% if modelo_mensaje %}
+    <p style="text-align: center;"><strong>{{ modelo_mensaje }}</strong></p>
+{% endif %}
+
 {% endblock %}
+Explicación:
+Vista peticiones: Detecta qué botón fue presionado y muestra un mensaje basado en el valor del botón.
+Formulario HTML: Los botones envían un formulario POST que Django procesa, mostrando un mensaje específico basado en el botón que fue presionado.
+Estilos CSS: Alinean los botones a la izquierda y aplican efectos visuales cuando se hace hover.
+Esto hará que al presionar cualquiera de los botones, se muestre un mensaje correspondiente en la página, sin redirigir a ningún otro lugar.
