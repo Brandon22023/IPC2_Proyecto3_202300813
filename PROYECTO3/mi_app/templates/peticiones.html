@@ -13,10 +13,28 @@
         align-items: flex-start; /* Alinea los elementos en la parte superior */
         gap: 20px; /* Espacio entre el formulario y el textarea */
     }
+
+    button[type="submit"] {
+    background-color: #4c5eaf; /* Color de fondo verde */
+    color: white; /* Texto en blanco */
+    padding: 10px 20px; /* Espaciado interno */
+    font-size: 16px; /* Tamaño de la fuente */
+    border: none; /* Sin borde */
+    border-radius: 5px; /* Bordes redondeados */
+    cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+    transition: background-color 0.3s ease; /* Transición suave */
+    display: block;
+    margin: 20px auto; /* Centrado en su contenedor */
+    }
+
+    /* Efecto al pasar el cursor sobre el botón */
+    button[type="submit"]:hover {
+        background-color: #05426d; /* Color de fondo más oscuro */
+    }
     /* Estilos específicos para el botón "Obtener" */
     button[name="obtener"] {
         background-color: #6d4caf; /* Verde */
-        color: white;
+        color: rgb(176, 44, 44);
         border: none;
         padding: 10px 20px;
         font-size: 16px;
