@@ -84,6 +84,9 @@ def peticiones(request):
     fechas = []
     empresas = []
     resultados = []
+    mostrar_textarea_model5 = False
+    resultado_model5 = False
+    contenido_archivo_xml = ""
 
     if request.method == 'POST':
         modelo_texto = request.POST.get('modelo_texto')
@@ -142,6 +145,16 @@ def peticiones(request):
             modelo_mensaje = "Reporte en PDF seleccionado."
         elif modelo_texto == 'modelo5':
             modelo_mensaje = "Prueba de mensaje seleccionada."
+            mostrar_textarea_model5 = True
+            resultado_model5 = True
+            try:
+                response = requests.post('http://127.0.0.1:5000/archivo_prueba')
+                if response.status_code == 200:
+                    contenido_archivo_xml = response.text
+                else:
+                    contenido_archivo_xml = "Error al consultar datos en el servidor Flask."
+            except requests.exceptions.RequestException as e:
+                contenido_archivo_xml = f"Error de conexión: {e}"
 
     return render(request, 'peticiones.html', {
         'modelo_mensaje': modelo_mensaje,
@@ -151,7 +164,10 @@ def peticiones(request):
         'fechas': fechas,
         'empresas': empresas,
         'resultados': resultados,
-        'resultados_json': json.dumps(resultados)  # Enviar resultados como JSON
+        'resultados_json': json.dumps(resultados),  # Enviar resultados como JSON
+        'mostrar_textarea_model5': mostrar_textarea_model5,
+        "resultado_model5": resultado_model5,
+        'contenido_archivo_xml': contenido_archivo_xml
     })
 
 

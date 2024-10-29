@@ -424,6 +424,22 @@ def consultar_datos():
     # Devolver solo el contenido XML como respuesta
     return Response(contenido_xml, mimetype='application/xml')
 
+@app.route('/archivo_prueba', methods=['POST'])
+def archivo_prueba():
+    # Ruta del archivo XML
+    ruta_xml = "./uploads/archivo_mensaje_prueba.xml"
+
+    # Leer el contenido del archivo XML y preparar la respuesta
+    try:
+        with open(ruta_xml, "r") as file:
+            archivo_prueba_xml = file.read()
+    except FileNotFoundError:
+        archivo_prueba_xml = "<error>No se encontró el archivo XML en la ruta especificada.</error>"
+
+
+    # Devolver solo el contenido XML como respuesta
+    return Response(archivo_prueba_xml, mimetype='application/xml')
+
 
 @app.route('/Resumen_clasificacion_fecha', methods=['POST'])
 def Resumen_clasificacion_fecha():
