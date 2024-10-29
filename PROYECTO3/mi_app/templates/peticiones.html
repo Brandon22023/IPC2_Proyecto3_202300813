@@ -200,6 +200,12 @@
         padding: 10px;
         font-size: 20px;
     }
+    #salida_procesado {
+        width: 700px;
+        height: 600px;
+        padding: 10px;
+        font-size: 20px;
+    }
 </style>
 <!-- Carga de Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -338,16 +344,21 @@
         </script>
     {% endif %}
     {% if mostrar_textarea_model5 %}
-        <div class="column">
-            <h3>mensaje de Prueba</h3>
-            <textarea id="salida" name="salida" placeholder="Aquí aparecerá el xml de Prueba...">{{ contenido_archivo_xml }}</textarea>
-        </div>
+        <form action="{% url 'peticiones' %}" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="modelo_texto" value="modelo5">
+            <div class="column">
+                <h3>Mensaje de Prueba</h3>
+                <textarea id="salida" name="salida" placeholder="Aquí aparecerá el xml de Prueba...">{{ contenido_archivo_xml }}</textarea>
+                <button type="submit" name="boton_obtener">Obtener</button>
+            </div>
+        </form>
     {% endif %}
+
     {% if resultado_model5 %}
         <div class="resultado_model5">
-            <h3>mensaje de Prueba</h3>
-            <textarea id="salida" name="salida" placeholder="Aqui aparecera el xml de prueba procesado..."></textarea>
-            <button type="submit">Obtener</button>
+            <h3>Mensaje de Prueba Procesado</h3>
+            <textarea id="salida_procesado" name="salida_procesado" placeholder="Aquí aparecerá el xml de prueba procesado...">{{ contenido_archivo_xml }}</textarea>
         </div>
     {% endif %}
 </div>

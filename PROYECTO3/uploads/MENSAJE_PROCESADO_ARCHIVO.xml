@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<respuesta>
+    <fecha>01/04/2022</fecha>
+    <red_social>Facebook</red_social>
+    <usuario>map0002@usac.edu</usuario>
+    <empresas>
+        <empresa nombre="USAC">
+            <servicio>inscripción</servicio>
+        </empresa>
+        <empresa nombre="TIGO"/>
+    </empresas>
+    <palabras_positivas>2</palabras_positivas>
+    <palabras_negativas>1</palabras_negativas>
+    <sentimiento_positivo>66.67%</sentimiento_positivo>
+    <sentimiento_negativo>33.33%</sentimiento_negativo>
+    <sentimiento_analizado>positivo</sentimiento_analizado>
+</respuesta>

@@ -87,6 +87,7 @@ def peticiones(request):
     mostrar_textarea_model5 = False
     resultado_model5 = False
     contenido_archivo_xml = ""
+    mensaje_confirmacion = ""  # Variable para el mensaje de confirmación
 
     if request.method == 'POST':
         modelo_texto = request.POST.get('modelo_texto')
@@ -146,15 +147,38 @@ def peticiones(request):
         elif modelo_texto == 'modelo5':
             modelo_mensaje = "Prueba de mensaje seleccionada."
             mostrar_textarea_model5 = True
-            resultado_model5 = True
+            
             try:
-                response = requests.post('http://127.0.0.1:5000/archivo_prueba')
+                response = requests.post('http://127.0.0.1:5000/archivo_prueba' )
                 if response.status_code == 200:
                     contenido_archivo_xml = response.text
                 else:
                     contenido_archivo_xml = "Error al consultar datos en el servidor Flask."
             except requests.exceptions.RequestException as e:
                 contenido_archivo_xml = f"Error de conexión: {e}"
+            print("Contenido del archivo XML fue subido con exito.")
+             # Verificación si el botón 'Obtener' fue presionado
+            # Verificación si el botón 'Obtener' fue presionado
+            if 'boton_obtener' in request.POST:
+                contenido_xml = request.POST.get('salida')  # Obtener el contenido del textarea
+                print("Contenido enviado a Flask:", contenido_xml)  # Imprimir el contenido que se va a enviar
+
+                try:
+                    # Enviar el contenido a Flask
+                    response = requests.post('http://127.0.0.1:5000/prueba_mensaje', data={'salida': contenido_xml.encode('utf-8')}, headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'})
+                    if response.status_code == 200:
+                        contenido_archivo_xml = response.text  # Guardar el contenido del XML procesado
+                        mensaje_confirmacion = "Archivo XML guardado correctamente en ./uploads/mensaje_prueba.xml."
+                    else:
+                        mensaje_confirmacion = "Error al guardar el archivo XML en Flask."
+                except requests.exceptions.RequestException as e:
+                    mensaje_confirmacion = f"Error de conexión: {e}"
+
+                # Cambiar el estado de los textareas para mostrar el mensaje de confirmación
+                resultado_model5 = True
+                mostrar_textarea_model5 = False
+                
+
 
     return render(request, 'peticiones.html', {
         'modelo_mensaje': modelo_mensaje,
@@ -167,7 +191,9 @@ def peticiones(request):
         'resultados_json': json.dumps(resultados),  # Enviar resultados como JSON
         'mostrar_textarea_model5': mostrar_textarea_model5,
         "resultado_model5": resultado_model5,
-        'contenido_archivo_xml': contenido_archivo_xml
+        'contenido_archivo_xml': contenido_archivo_xml, 
+        'mensaje_confirmacion': mensaje_confirmacion  # Mensaje de confirmación para la plantilla
+        
     })
 
 

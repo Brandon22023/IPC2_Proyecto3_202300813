@@ -439,6 +439,128 @@ def archivo_prueba():
 
     # Devolver solo el contenido XML como respuesta
     return Response(archivo_prueba_xml, mimetype='application/xml')
+# Ruta para recibir el contenido y guardar el archivo XML
+@app.route('/prueba_mensaje', methods=['POST'])
+def prueba_mensaje():
+    # Recibe el contenido del textarea desde el formulario
+    contenido_xml = request.form.get('salida')
+    print("el contenido de contenido_xml es: ", contenido_xml)
+    directorio = './uploads'
+    archivo_path = os.path.join(directorio, 'mensaje_prueba.xml')
+    
+    # Verificar si el directorio existe, y si no, crearlo
+    if not os.path.exists(directorio):
+        os.makedirs(directorio)
+    
+    # Guardar el contenido en el archivo XML
+    with open(archivo_path, 'w', encoding='utf-8') as archivo:
+        archivo.write(contenido_xml)
+    
+    # Leer el archivo guardado
+    with open(archivo_path, 'r', encoding='utf-8') as archivo:
+        contenido_leido = archivo.read()
+    
+    # Extraer fecha, red social y usuario
+    fecha_match = re.search(r'\d{2}/\d{2}/\d{4}', contenido_leido)
+    red_social_match = re.search(r'Red social:\s*(\w+)', contenido_leido)
+    usuario_match = re.search(r'Usuario:\s*([\w\.\@\d]+)', contenido_leido)
+    
+    fecha = fecha_match.group() if fecha_match else "No encontrada"
+    red_social = red_social_match.group(1) if red_social_match else "No encontrada"
+    usuario = usuario_match.group(1) if usuario_match else "No encontrado"
+    
+    # Obtener listas de palabras positivas y negativas
+    sentimientos_positivos, sentimientos_negativos = obtener_sentimientos()
+
+    # Crear patrones de regex para palabras positivas y negativas, ignorando mayúsculas y minúsculas
+    patrones_positivos = [re.compile(rf'\b{re.escape(palabra)}\b', re.IGNORECASE) for palabra in sentimientos_positivos]
+    patrones_negativos = [re.compile(rf'\b{re.escape(palabra)}\b', re.IGNORECASE) for palabra in sentimientos_negativos]
+
+    # Contar palabras positivas y negativas en el mensaje
+    contador_positivas = sum(1 for patron in patrones_positivos if patron.search(contenido_leido))
+    contador_negativas = sum(1 for patron in patrones_negativos if patron.search(contenido_leido))
+
+    # Cargar empresas y servicios
+    empresas = cargar_empresas_desde_xml()
+    empresas_mencionadas = []
+
+    for empresa in empresas:
+        # Crear un patrón de regex para el nombre de la empresa, ignorando mayúsculas y minúsculas
+        patron_empresa = re.compile(rf'\b{re.escape(empresa["nombre"])}\b', re.IGNORECASE)
+        if patron_empresa.search(contenido_leido):
+            servicios_mencionados = []
+            
+            for servicio in empresa["servicios"]:
+                # Crear patrones de regex para los aliases de servicios
+                patrones_servicio = [re.compile(rf'\b{re.escape(alias)}\b', re.IGNORECASE) for alias in servicio["aliases"]]
+                
+                # Verificar si alguno de los patrones del servicio coincide en el contenido
+                if any(patron.search(contenido_leido) for patron in patrones_servicio):
+                    servicios_mencionados.append(servicio["nombre"])
+
+            # Añadir empresa mencionada y sus servicios
+            empresas_mencionadas.append({
+                "nombre": empresa["nombre"],
+                "servicios": servicios_mencionados
+            })
+
+    # Calcular porcentaje de sentimientos
+    total_palabras = contador_positivas + contador_negativas
+    porcentaje_positivo = (contador_positivas / total_palabras) * 100 if total_palabras > 0 else 0
+    porcentaje_negativo = (contador_negativas / total_palabras) * 100 if total_palabras > 0 else 0
+
+    # Determinar el sentimiento final, considerando el caso de empate
+    if contador_positivas == contador_negativas:
+        sentimiento_analizado = "positivo y negativo cuentan con cantidades iguales"
+    else:
+        sentimiento_analizado = "positivo" if porcentaje_positivo > porcentaje_negativo else "negativo"
+
+    # Generar XML de respuesta
+    respuesta_xml = ET.Element("respuesta")
+    ET.SubElement(respuesta_xml, "fecha").text = fecha
+    ET.SubElement(respuesta_xml, "red_social").text = red_social
+    ET.SubElement(respuesta_xml, "usuario").text = usuario
+
+    empresas_xml = ET.SubElement(respuesta_xml, "empresas")
+    for empresa in empresas_mencionadas:
+        empresa_xml = ET.SubElement(empresas_xml, "empresa", nombre=empresa["nombre"])
+        for servicio in empresa["servicios"]:
+            ET.SubElement(empresa_xml, "servicio").text = servicio
+
+    ET.SubElement(respuesta_xml, "palabras_positivas").text = str(contador_positivas)
+    ET.SubElement(respuesta_xml, "palabras_negativas").text = str(contador_negativas)
+    ET.SubElement(respuesta_xml, "sentimiento_positivo").text = f"{porcentaje_positivo:.2f}%"
+    ET.SubElement(respuesta_xml, "sentimiento_negativo").text = f"{porcentaje_negativo:.2f}%"
+    ET.SubElement(respuesta_xml, "sentimiento_analizado").text = sentimiento_analizado
+
+    # Formatear el XML para que tenga sangría y sea legible
+    xml_str = ET.tostring(respuesta_xml, encoding='utf-8')
+    xml_pretty_str = minidom.parseString(xml_str).toprettyxml(indent="    ")
+
+    # Guardar el XML de respuesta con formato
+    archivo_respuesta_path = os.path.join(directorio, 'MENSAJE_PROCESADO_ARCHIVO.xml')
+    with open(archivo_respuesta_path, 'w', encoding='utf-8') as archivo:
+        archivo.write(xml_pretty_str)
+
+    # Retornar el contenido del archivo XML procesado
+    return xml_pretty_str, 200, {'Content-Type': 'application/xml'}
+
+@app.route('/prueba_de_mensaje', methods=['POST'])
+def prueba_de_mensaje():
+    # Ruta del archivo XML guardado
+    archivo_respuesta_path = './uploads/MENSAJE_PROCESADO_ARCHIVO.xml'
+    try:
+        # Verificar si el archivo existe
+        if not os.path.exists(archivo_respuesta_path):
+            return "El archivo XML no existe.", 404, {'Content-Type': 'text/plain'}
+        
+        # Retornar el archivo directamente para descargar o visualizar
+        return send_file(archivo_respuesta_path, mimetype='application/xml')
+    
+    except Exception as e:
+        return f"Error al leer el archivo XML: {e}", 500, {'Content-Type': 'text/plain'}
+
+    
 
 
 @app.route('/Resumen_clasificacion_fecha', methods=['POST'])
