@@ -462,14 +462,10 @@ def Resumen_clasificacion_fecha():
 
 @app.route('/mostrar_datos_clasificados', methods=['POST'])
 def mostrar_datos_clasificados():
-    # Validar el tipo de contenido
-    if request.content_type != 'application/json':
-        return jsonify({"error": "Content-Type debe ser 'application/json'"}), 415
-    
-    # Obtener datos del JSON enviado desde el cliente
+    # Obtener datos del JSON enviado desde Django
     data = request.get_json()
-    fecha_seleccionada = data.get('fecha')
-    empresa_seleccionada = data.get('empresa')
+    fecha_seleccionada = data['fecha']
+    empresa_seleccionada = data['empresa']
     
     # Imprimir en consola los datos recibidos
     print("Fecha seleccionada:", fecha_seleccionada)
@@ -477,8 +473,6 @@ def mostrar_datos_clasificados():
     
     # Ruta al archivo XML
     ruta_xml = "./uploads/resultado_analisis.xml"
-    # Ruta para guardar el archivo JSON
-    ruta_json = "./uploads/resultado_datos_grafica.json"
 
     try:
         tree = ET.parse(ruta_xml)
@@ -509,15 +503,10 @@ def mostrar_datos_clasificados():
                             "negativos": negativos,
                             "neutros": neutros
                         })
-
-        # Guardar los resultados en un archivo JSON
-        with open(ruta_json, 'w') as json_file:
-            json.dump(resultados, json_file, indent=4)
-
-        # Verificar si hay resultados antes de retornar el archivo
+        print("Resultados encontrados:", resultados)
+        # Retornar resultados o un mensaje de error si no se encontraron datos
         if resultados:
-            # Retornar el archivo JSON
-            return send_file(ruta_json, as_attachment=True), 200
+            return jsonify(resultados), 200
         else:
             return jsonify({"error": "No se encontraron datos"}), 404
 
