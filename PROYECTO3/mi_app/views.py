@@ -77,37 +77,82 @@ def cargar_archivo(request):
 
 def peticiones(request):
     modelo_mensaje = None
-    mostrar_textarea = False  # Controla la visualización del textarea
-    contenido_resultado_xml = ""  # Contenido para el textarea
+    mostrar_textarea = False
+    contenido_resultado_xml = ""
+    mostrar_combobox = False
+    fechas = []
+    empresas = []
+    resultados = []
 
     if request.method == 'POST':
         modelo_texto = request.POST.get('modelo_texto')
-
+        
         if modelo_texto == 'modelo1':
             modelo_mensaje = "Consultar datos seleccionado."
-            mostrar_textarea = True  # Activar textarea
-
+            mostrar_textarea = True
             try:
-                # Enviar solicitud a Flask y recibir contenido XML
                 response = requests.post('http://127.0.0.1:5000/consultar_datos')
-                
-                # Procesar la respuesta de Flask
                 if response.status_code == 200:
-                    contenido_resultado_xml = response.text  # Captura el contenido XML
+                    contenido_resultado_xml = response.text
                 else:
                     contenido_resultado_xml = "Error al consultar datos en el servidor Flask."
             except requests.exceptions.RequestException as e:
                 contenido_resultado_xml = f"Error de conexión: {e}"
-
+        
         elif modelo_texto == 'modelo2':
             modelo_mensaje = "Resumen de clasificación por fecha seleccionado."
-        # Puedes continuar con los otros modelos como antes
+            mostrar_combobox = True
+            if 'obtener' in request.POST:
+                # Obtener los valores seleccionados en los combobox
+                fecha_seleccionada = request.POST.get('combo1')
+                empresa_seleccionada = request.POST.get('combo2')
+                
+                # Imprimir los valores seleccionados para verificar
+                print("Fecha seleccionada:", fecha_seleccionada)
+                print("Empresa seleccionada:", empresa_seleccionada)
+                
+                try:
+                    response = requests.post(
+                        'http://127.0.0.1:5000/mostrar_datos_clasificados',
+                        json={'fecha': fecha_seleccionada, 'empresa': empresa_seleccionada}
+                    )
+                    if response.status_code == 200:
+                        resultados = response.json()
+                    else:
+                        modelo_mensaje = "Error en la consulta de datos en Flask."
+                except requests.exceptions.RequestException as e:
+                    modelo_mensaje = f"Error de conexión: {e}"
+            else: 
+                print("boton no fue presionado")
+            try:
+                response = requests.post('http://127.0.0.1:5000/Resumen_clasificacion_fecha')
+                if response.status_code == 200:
+                    data = response.json()
+                    fechas = data.get("fechas", [])
+                    empresas = data.get("empresas", [])
+                else:
+                    modelo_mensaje = "Error al consultar datos en el servidor Flask para modelo 2."
+            except requests.exceptions.RequestException as e:
+                modelo_mensaje = f"Error de conexión: {e}"
+
+        elif modelo_texto == 'modelo3':
+            modelo_mensaje = "Resumen de rango de fechas seleccionado."
+        elif modelo_texto == 'modelo4':
+            modelo_mensaje = "Reporte en PDF seleccionado."
+        elif modelo_texto == 'modelo5':
+            modelo_mensaje = "Prueba de mensaje seleccionada."
 
     return render(request, 'peticiones.html', {
         'modelo_mensaje': modelo_mensaje,
         'mostrar_textarea': mostrar_textarea,
-        'contenido_resultado_xml': contenido_resultado_xml
+        'contenido_resultado_xml': contenido_resultado_xml,
+        'mostrar_combobox': mostrar_combobox,
+        'fechas': fechas,
+        'empresas': empresas,
+        'resultados': resultados
     })
+
+
 
 # Vista para ver gráfico (Ayuda)
 def ayuda(request):

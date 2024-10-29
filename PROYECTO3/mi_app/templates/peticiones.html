@@ -13,6 +13,44 @@
         align-items: flex-start; /* Alinea los elementos en la parte superior */
         gap: 20px; /* Espacio entre el formulario y el textarea */
     }
+    /* Estilos específicos para el botón "Obtener" */
+    button[name="obtener"] {
+        background-color: #6d4caf; /* Verde */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+    /* Estilos para los combobox */
+    select {
+        width: 200px; /* Ancho del combobox */
+        padding: 10px;
+        font-size: 16px;
+        border: 2px solid #72aedc; /* Borde azul */
+        border-radius: 8px; /* Bordes redondeados */
+        background-color: #f9f9f9; /* Fondo claro */
+        color: #333; /* Color del texto */
+        transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* Efecto de hover para los combobox */
+    select:hover {
+        border-color: #3383c1; /* Borde azul más oscuro al hacer hover */
+        background-color: #e6f2fa; /* Fondo ligeramente más oscuro en hover */
+    }
+
+    /* Estilo para las opciones dentro del combobox */
+    select option {
+        color: #333; /* Color del texto de las opciones */
+        padding: 5px;
+    }
+
+    button[name="obtener"]:hover {
+        background-color: #821786; /* Verde más oscuro en hover */
+    }
 
     /* Estilos para los botones */
     form {
@@ -78,13 +116,6 @@
         background-color: #3383c1; /* Rojo más oscuro en hover */
     }
 
-    button[name="modelo_texto"][value="modelo6"] {
-        background-color: #72aedc; /* Amarillo */
-    }
-
-    button[name="modelo_texto"][value="modelo6"]:hover {
-        background-color: #3383c1; /* Amarillo más oscuro en hover */
-    }/* Estilos para el textarea */
     .column {
         display: flex;
         flex-direction: column;
@@ -105,9 +136,8 @@
         <button type="submit" name="modelo_texto" value="modelo1">Consultar datos</button>
         <button type="submit" name="modelo_texto" value="modelo2">Resumen de clasificación por fecha</button>
         <button type="submit" name="modelo_texto" value="modelo3">Resumen por rango de fechas</button>
-        <button type="submit" name="modelo_texto" value="modelo4">Resumen de clasificación por fecha</button>
-        <button type="submit" name="modelo_texto" value="modelo5">Reporte en PDF</button>
-        <button type="submit" name="modelo_texto" value="modelo6">Prueba de mensaje</button>
+        <button type="submit" name="modelo_texto" value="modelo4">Reporte en PDF</button>
+        <button type="submit" name="modelo_texto" value="modelo5">Prueba de mensaje</button>
     </form>
 
     <!-- Mostrar textarea solo cuando "Consultar datos" ha sido seleccionado -->
@@ -117,11 +147,57 @@
             <textarea id="salida" name="salida" placeholder="Aquí aparecerá el resultado procesado...">{{ contenido_resultado_xml }}</textarea>
         </div>
     {% endif %}
+
+    <!-- Mostrar combobox solo cuando "Resumen de clasificación por fecha" ha sido seleccionado -->
+    <!-- Mostrar combobox solo cuando "Resumen de clasificación por fecha" ha sido seleccionado -->
+    {% if mostrar_combobox %}
+        <form action="{% url 'peticiones' %}" method="post" class="column">
+            {% csrf_token %}
+            <input type="hidden" name="modelo_texto" value="modelo2">
+            <input type="hidden" name="obtener" value="obtener">
+            
+            <label for="combo1">Selecciona una fecha:</label>
+            <select id="combo1" name="combo1">
+                {% for fecha in fechas %}
+                    <option value="{{ fecha }}">{{ fecha }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="combo2">Selecciona una empresa:</label>
+            <select id="combo2" name="combo2">
+                {% for empresa in empresas %}
+                    <option value="{{ empresa }}">{{ empresa }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Obtener</button>
+        </form>
+    {% endif %}
+
+    <!-- Mostrar resultados si existen -->
+    {% if resultados %}
+        <h3>Resultados:</h3>
+        <table border="1">
+            <tr>
+                <th>Empresa</th>
+                <th>Total</th>
+                <th>Positivos</th>
+                <th>Negativos</th>
+                <th>Neutros</th>
+            </tr>
+            {% for resultado in resultados %}
+                <tr>
+                    <td>{{ resultado.empresa }}</td>
+                    <td>{{ resultado.total }}</td>
+                    <td>{{ resultado.positivos }}</td>
+                    <td>{{ resultado.negativos }}</td>
+                    <td>{{ resultado.neutros }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
 </div>
 
-{% if modelo_mensaje %}
-    <p style="text-align: center;"><strong>{{ modelo_mensaje }}</strong></p>
-{% endif %}
 
 {% endblock %}
 Explicación:

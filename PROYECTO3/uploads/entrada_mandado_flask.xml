@@ -2,8 +2,13 @@
 <solicitud_clasificacion>
     <diccionario>
         <sentimientos_positivos>
+            <palabra>Bueno</palabra>
+            <palabra>bonito</palabra>
+            <palabra>excelente</palabra>
+            <palabra>cool</palabra>
+            <palabra>satisfecho</palabra>
+            <palabra>tuanis</palabra>
             <palabra>claro</palabra>
-            <palabra>maravilloso</palabra>
         </sentimientos_positivos>
         <sentimientos_negativos>
             <palabra>malo</palabra>
@@ -57,7 +62,7 @@
         <mensaje>
             Lugar y fecha: Guatemala, 01/04/2022 15:01 Usuario:
             map0001@usac.edu Red social: Twitter
-            El servicio en la USAC es clara pero para inscripción fue muy bueno y me siento muy satisfecho.
+            El servicio en la USAC para inscripción fue muy bueno y me siento muy satisfecho.
         </mensaje>
         <mensaje>
             Lugar y fecha: Guatemala,

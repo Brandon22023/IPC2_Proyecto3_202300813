@@ -1,6 +1,6 @@
 import datetime
 import re
-from flask import Flask, Response, make_response, request, jsonify, session, send_file
+from flask import Flask, Response, make_response, render_template, request, jsonify, session, send_file
 import os
 import json
 from collections import Counter, defaultdict
@@ -401,34 +401,117 @@ def analizar_mensajes():
 def consultar_datos():
     # Ruta del archivo XML
     ruta_xml = "./uploads/resultado_analisis.xml"
-    
+    # Ruta del archivo JSON (se procesará pero no se enviará)
+    ruta_json = "./uploads/resultado_analisis.json"
+
+    # Leer el contenido del archivo XML y preparar la respuesta
     try:
-        # Leer el contenido del archivo XML
         with open(ruta_xml, "r") as file:
             contenido_xml = file.read()
     except FileNotFoundError:
         contenido_xml = "<error>No se encontró el archivo XML en la ruta especificada.</error>"
+
+    # Leer el archivo JSON solo para procesamiento interno, no se incluye en la respuesta
+    if os.path.exists(ruta_json):
+        try:
+            with open(ruta_json, "r", encoding="utf-8") as archivo_json:
+                contenido_json = archivo_json.read()
+                # Aquí podrías procesar el JSON, pero no se enviará a la respuesta
+                print("Contenido completo del archivo JSON:", contenido_json)
+        except Exception as e:
+            print(f"Error al leer el archivo JSON: {e}")
+
+    # Devolver solo el contenido XML como respuesta
+    return Response(contenido_xml, mimetype='application/xml')
+
+
+@app.route('/Resumen_clasificacion_fecha', methods=['POST'])
+def Resumen_clasificacion_fecha():
+    # Ruta del archivo XML
+    ruta_xml = "./uploads/resultado_analisis.xml"
+    
+    # Parseo del archivo XML
+    tree = ET.parse(ruta_xml)
+    root = tree.getroot()
+
+    # Extraer fechas y empresas
+    fechas = set()
+    empresas_set = set()  # Usar un set para evitar duplicados
+
+    for respuesta in root.findall('respuesta'):
+        fecha = respuesta.find('fecha').text.strip()
+        fechas.add(fecha)
+
+        # Extraer empresas
+        for empresa in respuesta.findall(".//empresa"):
+            nombre_empresa = empresa.get("nombre")
+            empresas_set.add(nombre_empresa)  # Agregar al set para evitar duplicados
+
+    fechas = sorted(fechas)  # Ordenar las fechas
+    empresas = sorted(empresas_set)  # Ordenar las empresas
+    # Agregar "Todas las empresas" al inicio de la lista de empresas
+    empresas.insert(0, "todas las empresas")
     
 
+    # Devolver datos en JSON
+    return jsonify({
+        "fechas": list(fechas),
+        "empresas": empresas  # Cambiar a una lista de empresas
+    })
 
-    # Devolver el contenido XML en la respuesta con el tipo de contenido adecuado
-    return Response(contenido_xml, mimetype='application/xml')
- # # Ruta del archivo JSON a leer
-    # ruta_json_completa = os.path.join(UPLOAD_FOLDER, 'resultado_analisis.json')
+
+@app.route('/mostrar_datos_clasificados', methods=['POST'])
+def mostrar_datos_clasificados():
+    # Obtener datos del JSON enviado desde Django
+    data = request.get_json()
+    fecha_seleccionada = data['fecha']
+    empresa_seleccionada = data['empresa']
+    
+    # Imprimir en consola los datos recibidos
+    print("Fecha seleccionada:", fecha_seleccionada)
+    print("Empresa seleccionada:", empresa_seleccionada)
+    
+    # Ruta al archivo XML
+    ruta_xml = "./uploads/resultado_analisis.xml"
+
+    try:
+        tree = ET.parse(ruta_xml)
+        root = tree.getroot()
+        resultados = []
+        
+        # Recorrer las respuestas en el XML
+        for respuesta in root.findall("respuesta"):
+            fecha = respuesta.find("fecha").text.strip()
             
-    #         # Verificar si el archivo JSON existe y leer su contenido
-    # if os.path.exists(ruta_json_completa):
-    #     try:
-    #         with open(ruta_json_completa, 'r', encoding='utf-8') as archivo_json:
-    #             contenido_completo_json = archivo_json.read()  # Leer el archivo completo como texto
+            # Comparar la fecha para verificar si coincide
+            if fecha.startswith(fecha_seleccionada):
+                for empresa in respuesta.find("analisis").findall("empresa"):
+                    nombre_empresa = empresa.get("nombre")
                     
-    #         print("Contenido completo del archivo JSON:", contenido_completo_json)  # Log para verificación
-                    
-    #                 # Devolver el contenido del JSON como respuesta directa
-    #         return Response(contenido_completo_json, mimetype='application/json'), 200
-    #     except Exception as e:
-    #         print(f"Error al leer el archivo JSON: {e}")
-    #         return jsonify({'error': 'No se pudo leer el archivo JSON.'}), 500
+                    # Comparar el nombre de la empresa o si se seleccionaron todas
+                    if empresa_seleccionada == "todas las empresas" or nombre_empresa == empresa_seleccionada:
+                        total = empresa.find("mensajes/total").text
+                        positivos = empresa.find("mensajes/positivos").text
+                        negativos = empresa.find("mensajes/negativos").text
+                        neutros = empresa.find("mensajes/neutros").text
+                        
+                        # Agregar los resultados encontrados a la lista
+                        resultados.append({
+                            "empresa": nombre_empresa,
+                            "total": total,
+                            "positivos": positivos,
+                            "negativos": negativos,
+                            "neutros": neutros
+                        })
+        
+        # Retornar resultados o un mensaje de error si no se encontraron datos
+        if resultados:
+            return jsonify(resultados), 200
+        else:
+            return jsonify({"error": "No se encontraron datos"}), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
      
 
 

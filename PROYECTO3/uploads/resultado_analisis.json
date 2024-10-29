@@ -1,11 +1,28 @@
 [
   {
     "fecha": "01/04/2022 15:01",
-    "total": 0,
-    "positivos": 0,
+    "total": 3,
+    "positivos": 3,
     "negativos": 0,
     "neutros": 0,
-    "empresa_analisis": []
+    "empresa_analisis": [
+      {
+        "nombre": "USAC",
+        "total": 2,
+        "positivos": 2,
+        "negativos": 0,
+        "neutros": 0,
+        "servicios": [
+          {
+            "nombre": "inscripción",
+            "total": 1,
+            "positivos": 1,
+            "negativos": 0,
+            "neutros": 0
+          }
+        ]
+      }
+    ]
   },
   {
     "fecha": "01/04/2022 15:20",
