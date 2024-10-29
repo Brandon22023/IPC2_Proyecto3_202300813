@@ -7,6 +7,55 @@
     h2, p {
         text-align: center; /* Centrar el texto */
     }
+    /* Añade esto al CSS existente */
+    #chart {
+        width: 600px; /* Ancho del lienzo */
+        height: 400px; /* Altura del lienzo */
+    }
+    .chart-container {
+    display: flex;                 /* Usar flexbox */
+    flex-direction: column;       /* Colocar los elementos en columna */
+    align-items: center;          /* Centrar horizontalmente */
+    justify-content: center;       /* Centrar verticalmente */
+    margin: 20px;                 /* Espacio alrededor del contenedor */
+    }
+    /* Estilos para la tabla */
+    .result-table {
+        width: 100%;
+        border-collapse: collapse; /* Para eliminar espacios entre bordes */
+        margin-bottom: 20px; /* Espacio inferior para la tabla */
+    }
+
+    .result-table th {
+        background-color: #4c4eaf; /* Color de fondo de los encabezados */
+        color: white; /* Color del texto de los encabezados */
+        padding: 10px; /* Espaciado interno */
+        text-align: left; /* Alinear texto a la izquierda */
+    }
+
+    .result-table td {
+        background-color: #9f4b4b; /* Color de fondo de las celdas */
+        padding: 10px; /* Espaciado interno */
+        border: 1px solid #ddd; /* Borde de las celdas */
+    }
+
+    .result-table tr:nth-child(even) td {
+        background-color: #e7f3fe; /* Color de fondo alternativo para filas pares */
+    }
+
+    .result-table tr:hover td {
+        background-color: #d1e7dd; /* Color de fondo al pasar el ratón por encima */
+    }
+
+    /* Estilos para el contenedor del gráfico */
+    .chart-container {
+        display: flex;
+        justify-content: center; /* Centrar la gráfica horizontalmente */
+        margin: 20px 0; /* Espacio arriba y abajo */
+        max-width: 600px; /* Ajustar el ancho máximo del contenedor */
+        width: 100%; /* Permitir que el contenedor sea responsivo */
+    }
+    
     /* Contenedor principal para el formulario y el textarea */
     .contenedor-flex {
         display: flex;
@@ -93,6 +142,7 @@
         transition: background-color 0.3s ease;
     }
 
+
     /* Estilos específicos para cada botón */
     button[name="modelo_texto"][value="modelo1"] {
         background-color: #72aedc; /* Azul */
@@ -146,6 +196,8 @@
         font-size: 20px;
     }
 </style>
+<!-- Carga de Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="contenedor-flex">
     <!-- Formulario con los botones -->
@@ -193,9 +245,10 @@
     {% endif %}
 
     <!-- Mostrar resultados si existen -->
+    <!-- Tabla de resultados -->
     {% if resultados %}
         <h3>Resultados:</h3>
-        <table border="1">
+        <table class="result-table">
             <tr>
                 <th>Empresa</th>
                 <th>Total</th>
@@ -213,6 +266,73 @@
                 </tr>
             {% endfor %}
         </table>
+
+        <!-- Lienzo para el gráfico de barras -->
+        <h3>Gráfico de Clasificación por Empresa</h3>
+        <div class="chart-container">
+            <canvas id="chart" width="600" height="400"></canvas>
+        </div>
+
+        <!-- Script para inicializar el gráfico -->
+        <script>
+            const ctx = document.getElementById('chart').getContext('2d');
+
+            // Parsear los datos JSON de 'resultados_json' enviados desde el backend
+            const resultados = JSON.parse('{{ resultados_json|safe }}');
+
+            // Crear los arrays necesarios para las etiquetas y los datos de la gráfica
+            const labels = resultados.map(resultado => resultado.empresa);
+            const dataTotal = resultados.map(resultado => resultado.total);
+            const dataPositivos = resultados.map(resultado => resultado.positivos);
+            const dataNegativos = resultados.map(resultado => resultado.negativos);
+            const dataNeutros = resultados.map(resultado => resultado.neutros);
+
+            // Configuración del gráfico
+            const chartData = {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Total',
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        data: dataTotal
+                    },
+                    {
+                        label: 'Positivos',
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        data: dataPositivos
+                    },
+                    {
+                        label: 'Negativos',
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        data: dataNegativos
+                    },
+                    {
+                        label: 'Neutros',
+                        backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                        data: dataNeutros
+                    }
+                ]
+            };
+
+            // Inicializar el gráfico
+            new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Permite cambiar el tamaño sin mantener la relación de aspecto
+                    plugins: {
+                        legend: {
+                            position: 'bottom'  // Cambiar posición de la leyenda a la parte inferior
+                        },
+                        title: {
+                            display: true,
+                            text: 'Resumen de Clasificación de Resultados'
+                        }
+                    }
+                }
+            });
+        </script>
     {% endif %}
 </div>
 

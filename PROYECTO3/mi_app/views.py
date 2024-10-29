@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 from flask import redirect
@@ -149,7 +150,8 @@ def peticiones(request):
         'mostrar_combobox': mostrar_combobox,
         'fechas': fechas,
         'empresas': empresas,
-        'resultados': resultados
+        'resultados': resultados,
+        'resultados_json': json.dumps(resultados)  # Enviar resultados como JSON
     })
 
 
