@@ -341,10 +341,24 @@
                     }
                 }
             });
+
+             
+
         </script>
     {% endif %}
+
+
+    {% if reportes_pdf %}
+        <h3>¿DESEA GENERAR EL REPORTE?</h3>
+        <form method="POST" action="{% url 'peticiones' %}">
+            {% csrf_token %}
+            <button type="submit" name="generar_reporte" value="true">Generar</button>  
+        </form>
+    {% endif %}
+
+
     {% if mostrar_textarea_model5 %}
-        <form action="{% url 'peticiones' %}" method="POST">
+        <form action="" method="POST">
             {% csrf_token %}
             <input type="hidden" name="modelo_texto" value="modelo5">
             <div class="column">

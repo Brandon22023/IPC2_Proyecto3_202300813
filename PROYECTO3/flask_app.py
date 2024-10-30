@@ -2,11 +2,16 @@ import datetime
 import re
 from flask import Flask, Response, make_response, render_template, request, jsonify, session, send_file
 import os
+import matplotlib
+matplotlib.use('Agg')  # Establecer el backend a 'Agg' para guardar imágenes sin mostrar
+import matplotlib.pyplot as plt
 import json
 from collections import Counter, defaultdict
 import traceback
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+from fpdf import FPDF
+from PyPDF2 import PdfMerger  # Asegúrate de instalar PyPDF2 si aún no lo tienes
 app = Flask(__name__)
 UPLOAD_FOLDER = './uploads'  # Carpeta donde se guardarán los archivos
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -111,7 +116,29 @@ def cargar_archivo():
         print(traceback.format_exc())  # Imprime el traceback del error
         return jsonify({'error': str(e)}), 500
 
+@app.route('/cargar_archivo_json', methods=['GET'])
+def cargar_archivo_json():
+    # Ruta del archivo JSON a leer
+    ruta_json_completa = os.path.join(UPLOAD_FOLDER, 'resultado_analisis.json')
+            
+    # Verificar si el archivo JSON existe y leer su contenido
+    if os.path.exists(ruta_json_completa):
+        try:
+            with open(ruta_json_completa, 'r', encoding='utf-8') as archivo_json:
+                contenido_completo_json = archivo_json.read()  # Leer el archivo completo como texto
+                    
+            print("Contenido completo del archivo JSON:", contenido_completo_json)  # Log para verificación
+                    
+                    # Devolver el contenido del JSON como respuesta directa
+            return Response(contenido_completo_json, mimetype='application/json'), 200
+        except Exception as e:
+            print(f"Error al leer el archivo JSON: {e}")
+            return jsonify({'error': 'No se pudo leer el archivo JSON.'}), 500
+    else:
+        return jsonify({'error': 'El archivo JSON no existe'}), 404
+
 def leer_y_mostrar_archivo():
+    
     try:
         # Define la ruta del archivo XML
         ruta_archivo_xml = os.path.join(UPLOAD_FOLDER, 'entrada_mandado_flask.xml')
@@ -403,7 +430,7 @@ def consultar_datos():
     ruta_xml = "./uploads/resultado_analisis.xml"
     # Ruta del archivo JSON (se procesará pero no se enviará)
     ruta_json = "./uploads/resultado_analisis.json"
-
+    
     # Leer el contenido del archivo XML y preparar la respuesta
     try:
         with open(ruta_xml, "r") as file:
@@ -420,9 +447,57 @@ def consultar_datos():
                 print("Contenido completo del archivo JSON:", contenido_json)
         except Exception as e:
             print(f"Error al leer el archivo JSON: {e}")
-
+    generar_pdf_consultar_datos()
     # Devolver solo el contenido XML como respuesta
     return Response(contenido_xml, mimetype='application/xml')
+
+
+def generar_pdf_consultar_datos():
+    # Ruta del archivo XML
+    ruta_xml = "./uploads/resultado_analisis.xml"
+    # Ruta del archivo JSON (se procesará pero no se enviará)
+    ruta_json = "./uploads/resultado_analisis.json"
+    
+    # Ruta de salida para el archivo PDF
+    ruta_pdf = "./Reportes/REPORTES.pdf"
+
+    # Verificar si la carpeta de reportes existe, si no, crearla
+    os.makedirs(os.path.dirname(ruta_pdf), exist_ok=True)
+    # Leer el contenido del archivo XML y preparar la respuesta
+    try:
+        with open(ruta_xml, "r") as file:
+            contenido_xml = file.read()
+    except FileNotFoundError:
+        contenido_xml = "<error>No se encontró el archivo XML en la ruta especificada.</error>"
+
+    # Leer el archivo JSON solo para procesamiento interno, no se incluye en la respuesta
+    if os.path.exists(ruta_json):
+        try:
+            with open(ruta_json, "r", encoding="utf-8") as archivo_json:
+                contenido_json = archivo_json.read()
+                # Aquí podrías procesar el JSON, pero no se enviará a la respuesta
+                print("Contenido completo del archivo JSON:", contenido_json)
+        except Exception as e:
+            print(f"Error al leer el archivo JSON: {e}")
+    # Crear el archivo PDF con el contenido del XML usando FPDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    
+    # Configurar el título en el PDF
+    pdf.set_font("Arial", "B", 16)  # Fuente en negrita para el título
+    pdf.cell(0, 10, "1. CONSULTA DE DATOS", ln=True, align="C")  # Centrar título
+    pdf.ln(10)  # Línea en blanco después del título
+    # Agregar contenido XML al PDF, dividiendo líneas largas
+    # Configurar el contenido en el PDF
+    pdf.set_font("Arial", size=12)
+    for linea in contenido_xml.splitlines():
+        pdf.cell(0, 10, txt=linea, ln=True)
+    
+    # Guardar el PDF
+    pdf.output(ruta_pdf)
+
 
 @app.route('/archivo_prueba', methods=['POST'])
 def archivo_prueba():
@@ -628,10 +703,10 @@ def mostrar_datos_clasificados():
                     
                     # Comparar el nombre de la empresa o si se seleccionaron todas
                     if empresa_seleccionada == "todas las empresas" or nombre_empresa == empresa_seleccionada:
-                        total = empresa.find("mensajes/total").text
-                        positivos = empresa.find("mensajes/positivos").text
-                        negativos = empresa.find("mensajes/negativos").text
-                        neutros = empresa.find("mensajes/neutros").text
+                        total = int(empresa.find("mensajes/total").text)  # Convertir a int
+                        positivos = int(empresa.find("mensajes/positivos").text)  # Convertir a int
+                        negativos = int(empresa.find("mensajes/negativos").text)  # Convertir a int
+                        neutros = int(empresa.find("mensajes/neutros").text)  # Convertir a int
                         
                         # Agregar los resultados encontrados a la lista
                         resultados.append({
@@ -641,16 +716,131 @@ def mostrar_datos_clasificados():
                             "negativos": negativos,
                             "neutros": neutros
                         })
+
         print("Resultados encontrados:", resultados)
-        # Retornar resultados o un mensaje de error si no se encontraron datos
+
+        # Verificar si hay resultados antes de generar la gráfica
         if resultados:
+            crear_grafica(resultados, fecha_seleccionada, empresa_seleccionada)
             return jsonify(resultados), 200
         else:
             return jsonify({"error": "No se encontraron datos"}), 404
 
     except Exception as e:
+        print("Error:", str(e))  # Imprimir el error
         return jsonify({"error": str(e)}), 500
+    
+
+def crear_grafica(resultados, fecha_seleccionada, empresa_seleccionada):
+    # Crear la carpeta IMG si no existe
+    os.makedirs('./IMG', exist_ok=True)
+
+    # Extraer datos para la gráfica
+    categorias = ['Total', 'Positivos', 'Negativos', 'Neutros']
+    valores = [
+        sum(res['total'] for res in resultados), 
+        sum(res['positivos'] for res in resultados), 
+        sum(res['negativos'] for res in resultados), 
+        sum(res['neutros'] for res in resultados)
+    ]
+
+    print("Datos para la gráfica:", dict(zip(categorias, valores)))  # Imprimir datos para la gráfica
+
+    # Crear la gráfica
+    try:
+        plt.figure(figsize=(10, 6))
+        plt.bar(categorias, valores, color=['blue', 'green', 'red', 'yellow'])
+        plt.xlabel('Categorías')
+        plt.ylabel('Cantidad')
+        plt.title('Clasificación de Mensajes por Fecha')
+        plt.grid(axis='y')
+
+        # Guardar la gráfica en un archivo PNG
+        plt.savefig('./IMG/grafica_barras_clasificacion_fecha.png')
+        plt.close()  # Cerrar la figura para liberar memoria
+        print("Gráfica guardada en ./IMG/grafica_barras_clasificacion_fecha.png")  # Mensaje de éxito
+
+        # Crear el PDF
+        crear_pdf(fecha_seleccionada, empresa_seleccionada)
+    except Exception as e:
+        print("Error al guardar la gráfica:", str(e))  # Imprimir el error
+
+def crear_pdf(fecha_seleccionada, empresa_seleccionada):
+    # Crear la carpeta Reportes si no existe
+    os.makedirs('./Reportes', exist_ok=True)
+
+    # Ruta para el PDF temporal
+    ruta_pdf_temp = "./Reportes/Resumen_clasificacion_temp.pdf"
+    ruta_pdf_existente = "./Reportes/REPORTES.pdf"
+
+    # Crear el PDF temporal
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Agregar título
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, 'Resumen de Clasificación', ln=True, align='C')
+
+    # Agregar fecha y empresa seleccionada
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, f'Fecha Seleccionada: {fecha_seleccionada}', ln=True)
+    pdf.cell(250, 30, f'Empresa Seleccionada: {empresa_seleccionada}', ln=True)
+
+    # Agregar la imagen de la gráfica
+    pdf.image('./IMG/grafica_barras_clasificacion_fecha.png', x=10, y=50, w=190)
+
+    # Guardar el PDF temporal
+    pdf.output(ruta_pdf_temp)
+    print(f"PDF temporal guardado en {ruta_pdf_temp}")
+
+    # Combinar el PDF temporal con el PDF existente
+    merger = PdfMerger()
+    if os.path.exists(ruta_pdf_existente):
+        merger.append(ruta_pdf_existente)  # Agrega el PDF existente
+    merger.append(ruta_pdf_temp)           # Agrega el nuevo contenido
+
+    # Guardar el PDF combinado en la ruta del PDF existente
+    merger.write(ruta_pdf_existente)
+    merger.close()
+
+    # Eliminar el PDF temporal
+    os.remove(ruta_pdf_temp)
+    print(f"Contenido agregado a {ruta_pdf_existente}")
      
+@app.route('/REPORTE_PDF', methods=['POST'])
+def REPORTE_PDF():
+    Ruta_reportes = "./Reportes"
+    Ruta_final = "./REPORTE DEL SISTEMA"
+
+    # Crear la carpeta si no existe
+    if not os.path.exists(Ruta_final):
+        os.makedirs(Ruta_final)
+
+    # Lista para almacenar los nombres de los archivos PDF
+    archivos_pdf = []
+
+    # Recorremos la carpeta y recogemos los archivos PDF
+    for filename in sorted(os.listdir(Ruta_reportes)):
+        if filename.endswith('.pdf'):
+            archivos_pdf.append(os.path.join(Ruta_reportes, filename))
+
+    # Creamos un objeto PdfMerger
+    merger = PdfMerger()
+
+    # Añadimos cada archivo PDF al merger
+    for pdf in archivos_pdf:
+        merger.append(pdf)
+
+    # Guardamos el archivo unido en la nueva ruta
+    ruta_pdf_final = os.path.join(Ruta_final, 'REPORTE.pdf')
+    merger.write(ruta_pdf_final)
+    merger.close()
+
+    print("PDF creado con éxito en:", ruta_pdf_final)
+    print("Solicitud POST recibida en Flask para generar PDF.")
+
+    # Aquí no devolvemos nada, solo se genera el PDF
+    return '', 204  # Devuelve un código de estado 204 No Content
 
 
 @app.route('/modelo', methods=['POST'])

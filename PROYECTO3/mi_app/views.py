@@ -88,6 +88,7 @@ def peticiones(request):
     resultado_model5 = False
     contenido_archivo_xml = ""
     mensaje_confirmacion = ""  # Variable para el mensaje de confirmación
+    reportes_pdf = False
 
     if request.method == 'POST':
         modelo_texto = request.POST.get('modelo_texto')
@@ -127,8 +128,8 @@ def peticiones(request):
                         modelo_mensaje = "Error en la consulta de datos en Flask."
                 except requests.exceptions.RequestException as e:
                     modelo_mensaje = f"Error de conexión: {e}"
-            else: 
-                print("boton no fue presionado")
+                 
+
             try:
                 response = requests.post('http://127.0.0.1:5000/Resumen_clasificacion_fecha')
                 if response.status_code == 200:
@@ -144,6 +145,35 @@ def peticiones(request):
             modelo_mensaje = "Resumen de rango de fechas seleccionado."
         elif modelo_texto == 'modelo4':
             modelo_mensaje = "Reporte en PDF seleccionado."
+            reportes_pdf = True
+            print("inicio.")
+            # Verificar si el botón para generar el reporte fue presionado
+            if request.POST.get("generar_reporte") == "true":
+                modelo_mensaje = "Se presionó el botón para generar el reporte."
+                print("Botón de 'Generar Reporte' detectado en Django.")    
+
+                try:
+                    # Enviar solicitud POST a Flask para generar el PDF
+                    response = requests.post('http://127.0.0.1:5000/REPORTE_PDF')
+                    print("Solicitud POST enviada a Flask.")
+
+                    # Verificar la respuesta de Flask
+                    if response.status_code == 204:
+                        modelo_mensaje = "Reporte PDF generado correctamente."
+                        print("Flask confirmó generación exitosa del PDF.")
+                    else:
+                        modelo_mensaje = f"Error al generar el reporte PDF en Flask. Código de estado: {response.status_code}"
+                        print("Error en la generación del PDF en Flask:", response.status_code)
+
+                except requests.exceptions.RequestException as e:
+                    modelo_mensaje = f"Error de conexión: {e}"
+                    print("Error de conexión con Flask:", e)
+            else:
+                print("Botón de 'Generar Reporte' no detectado en Django.")
+            print("fin.")
+
+
+
         elif modelo_texto == 'modelo5':
             modelo_mensaje = "Prueba de mensaje seleccionada."
             mostrar_textarea_model5 = True
@@ -192,8 +222,8 @@ def peticiones(request):
         'mostrar_textarea_model5': mostrar_textarea_model5,
         "resultado_model5": resultado_model5,
         'contenido_archivo_xml': contenido_archivo_xml, 
-        'mensaje_confirmacion': mensaje_confirmacion  # Mensaje de confirmación para la plantilla
-        
+        'mensaje_confirmacion': mensaje_confirmacion,  # Mensaje de confirmación para la plantilla
+        'reportes_pdf': reportes_pdf
     })
 
 
