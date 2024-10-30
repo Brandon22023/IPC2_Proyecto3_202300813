@@ -21,20 +21,13 @@ def cargar_archivo(request):
         request.session['archivo_info'] = ''
         request.session['contenido_resultado_xml'] = ''
         request.session['archivo_cargado'] = False  # Resetear estado de archivo cargado
-
-        # Ruta de la carpeta
-        uploads_dir = './uploads'
-        
-        # Eliminar todos los archivos en la carpeta, excepto 'archivo_mensaje_prueba.xml'
-        for filename in os.listdir(uploads_dir):
-            if filename != 'archivo_mensaje_prueba.xml':
-                file_path = os.path.join(uploads_dir, filename)
-                try:
-                    if os.path.isfile(file_path):
-                        os.remove(file_path)  # Eliminar el archivo
-                except Exception as e:
-                    print(f"Error al eliminar {file_path}: {e}")
-        
+    
+        # Llamar a la ruta de Flask para eliminar los archivos
+        try:
+            response = requests.post('http://localhost:5000/RESET')  # Cambia la URL si es necesario
+            # No necesitas verificar la respuesta si no te interesa
+        except requests.exceptions.RequestException as e:
+            print(f"Error al llamar a la ruta de Flask: {e}")
         # Renderizar la plantilla sin datos
         return render(request, 'cargar_archivo.html', {
             'contenido_xml': '',

@@ -19,6 +19,20 @@ app.secret_key = 'your_secret_key'  # Necesario para usar sesiones
 archivo_cargado=False
 
 
+@app.route('/RESET', methods=['POST'])
+def RESET():
+    uploads_dir = './uploads'
+        
+        # Eliminar todos los archivos en la carpeta, excepto 'archivo_mensaje_prueba.xml'
+    for filename in os.listdir(uploads_dir):
+        if filename != 'archivo_mensaje_prueba.xml':
+            file_path = os.path.join(uploads_dir, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)  # Eliminar el archivo
+            except Exception as e:
+                print(f"Error al eliminar {file_path}: {e}")
+
 @app.route('/cargar_archivo', methods=['POST'])
 def cargar_archivo():
     global archivo_cargado
