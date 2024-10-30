@@ -864,7 +864,7 @@ def modelo():
             modelo_text = "Nombre: Brandon Antonio Marroquín Pérez <br> Carnet: 202300813 <br> Carrera: Ingeniería en Ciencias y Sistemas <br> Curso: INTRODUCCIÓN A LA PROGRAMACIÓN Y COMPUTACIÓN 2 Sección N <br> CUI: 3045062060114 <br> Semestre: 4"
         elif modelo == 'modelo2':
             modelo_titulo = "Documentación"
-            modelo_text = "Link de la documentacion: ------------------------------------------------------------------"
+            modelo_text = "Link de la documentacion: https://drive.google.com/drive/folders/1dDmBMhngQ3WZSGbr4k5tKbyJ_AkoQuXN?usp=sharing"
         else:
             return jsonify({'error': 'Modelo no válido'}), 400  
 
