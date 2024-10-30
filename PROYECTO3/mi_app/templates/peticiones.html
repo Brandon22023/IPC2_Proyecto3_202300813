@@ -206,6 +206,73 @@
         padding: 10px;
         font-size: 20px;
     }
+
+    /* Estilos generales para el formulario */
+    .form-resumen {
+        max-width: 600px; /* Ancho máximo del formulario */
+        margin: 0 auto; /* Centrando el formulario */
+        padding: 20px; /* Espaciado interno */
+        border: 1px solid #ccc; /* Borde gris claro */
+        border-radius: 5px; /* Bordes redondeados */
+        background-color: #f9f9f9; /* Color de fondo suave */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+    }
+
+    /* Estilos para los títulos */
+    .titulo-resumen {
+        text-align: center; /* Centrar el texto */
+        color: #333; /* Color del texto */
+        margin-bottom: 20px; /* Espaciado inferior */
+    }
+
+    /* Estilos para los grupos de entrada */
+    .grupo-fecha-inicio, .grupo-fecha-fin, .grupo-empresa {
+        margin-bottom: 15px; /* Espaciado inferior */
+    }
+
+    /* Estilos para las etiquetas */
+    label {
+        display: block; /* Etiquetas en bloque */
+        margin-bottom: 5px; /* Espaciado inferior */
+        font-weight: bold; /* Negrita */
+        color: #555; /* Color de la etiqueta */
+    }
+
+    /* Estilos para los campos de fecha */
+    .input-fecha {
+        width: 100%; /* Ancho completo */
+        padding: 10px; /* Espaciado interno */
+        border: 1px solid #ccc; /* Borde gris claro */
+        border-radius: 4px; /* Bordes redondeados */
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra interna */
+        font-size: 16px; /* Tamaño de fuente */
+    }
+
+    /* Estilos para los campos de selección */
+    .select-empresa {
+        width: 100%; /* Ancho completo */
+        padding: 10px; /* Espaciado interno */
+        border: 1px solid #ccc; /* Borde gris claro */
+        border-radius: 4px; /* Bordes redondeados */
+        background-color: #fff; /* Fondo blanco */
+        font-size: 16px; /* Tamaño de fuente */
+    }
+
+    /* Estilos para el botón */
+    .btn-obtener-datos {
+        background-color: #28a745; /* Color de fondo verde */
+        color: white; /* Color del texto */
+        padding: 10px 15px; /* Espaciado interno */
+        border: none; /* Sin borde */
+        border-radius: 5px; /* Bordes redondeados */
+        cursor: pointer; /* Cambia el cursor al pasar por encima */
+        font-size: 16px; /* Tamaño de fuente */
+        transition: background-color 0.3s; /* Transición suave */
+    }
+
+    .btn-obtener-datos:hover {
+        background-color: #218838; /* Color de fondo verde oscuro al pasar el mouse */
+    }
 </style>
 <!-- Carga de Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -346,7 +413,58 @@
 
         </script>
     {% endif %}
+    <!-- Mostrar formulario solo cuando "Resumen de rango de fechas" ha sido seleccionado -->
+    {% if mostrar_fechas_comboox %}
+    <h3 class="titulo-resumen">RESUMEN POR RANGO DE FECHAS</h3>
 
+    <form action="{% url 'peticiones' %}" method="post" class="form-resumen">
+        {% csrf_token %}
+        <input type="hidden" name="modelo_texto" value="modelo3">
+        <input type="hidden" name="obtener" value="obtener_datos">
+        
+        <div class="grupo-fecha-inicio">
+            <label for="inicio_fecha">Seleccione la fecha de inicio:</label>
+            <input type="date" id="inicio_fecha" name="fecha_inicio" class="input-fecha" required>
+        </div>
+
+        <div class="grupo-fecha-fin">
+            <label for="fin_fecha">Seleccione la fecha de fin:</label>
+            <input type="date" id="fin_fecha" name="fecha_fin" class="input-fecha" required>
+        </div>
+
+        <div class="grupo-empresa">
+            <label for="empresa_opciones">Seleccione la empresa:</label>
+            <select id="empresa_opciones" name="empresa_seleccionada" class="select-empresa">
+                {% for empresa in empresas %}
+                    <option value="{{ empresa }}">{{ empresa }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" name="obtener" value="obtener_datos">Obtener</button>
+    </form>
+    {% endif %}
+    {% if resultados_intervalo_fecha %} 
+        <h3>Resultados:</h3>
+        <table class="result-table">
+            <tr>
+                <th>Empresa</th>
+                <th>Total</th>
+                <th>Positivos</th>
+                <th>Negativos</th>
+                <th>Neutros</th>
+            </tr>
+            {% for resultado in resultados_intervalo_fecha %}
+                <tr>
+                    <td>{{ resultados_intervalo_fecha.empresa }}</td>
+                    <td>{{ resultados_intervalo_fecha.total }}</td>
+                    <td>{{ resultados_intervalo_fecha.positivos }}</td>
+                    <td>{{ resultados_intervalo_fecha.negativos }}</td>
+                    <td>{{ resultados_intervalo_fecha.neutros }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
 
     {% if reportes_pdf %}
         <h3>¿DESEA GENERAR EL REPORTE?</h3>

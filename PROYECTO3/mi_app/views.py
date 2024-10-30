@@ -21,6 +21,19 @@ def cargar_archivo(request):
         request.session['archivo_info'] = ''
         request.session['contenido_resultado_xml'] = ''
         request.session['archivo_cargado'] = False  # Resetear estado de archivo cargado
+
+        # Ruta de la carpeta
+        uploads_dir = './uploads'
+        
+        # Eliminar todos los archivos en la carpeta, excepto 'archivo_mensaje_prueba.xml'
+        for filename in os.listdir(uploads_dir):
+            if filename != 'archivo_mensaje_prueba.xml':
+                file_path = os.path.join(uploads_dir, filename)
+                try:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)  # Eliminar el archivo
+                except Exception as e:
+                    print(f"Error al eliminar {file_path}: {e}")
         
         # Renderizar la plantilla sin datos
         return render(request, 'cargar_archivo.html', {
@@ -89,6 +102,8 @@ def peticiones(request):
     contenido_archivo_xml = ""
     mensaje_confirmacion = ""  # Variable para el mensaje de confirmación
     reportes_pdf = False
+    mostrar_fechas_comboox = False
+    resultados_intervalo_fecha = []  # Para guardar los resultados de la consulta en modelo3
 
     if request.method == 'POST':
         modelo_texto = request.POST.get('modelo_texto')
@@ -141,8 +156,54 @@ def peticiones(request):
             except requests.exceptions.RequestException as e:
                 modelo_mensaje = f"Error de conexión: {e}"
 
+
+
+
         elif modelo_texto == 'modelo3':
             modelo_mensaje = "Resumen de rango de fechas seleccionado."
+            mostrar_fechas_comboox = True
+            resultados_intervalo_fecha = None  # Inicializar variable para los resultados
+            resultados_intervalo_fecha = []  # Inicializamos como lista vacía
+
+
+            if request.POST.get('obtener') == 'obtener_datos':
+                fecha_inicio = request.POST.get('fecha_inicio')
+                fecha_fin = request.POST.get('fecha_fin')
+                empresa_seleccionada = request.POST.get('empresa_seleccionada')
+
+                if fecha_inicio and fecha_fin and empresa_seleccionada:
+                    try:
+                        # Llamada al servicio Flask para obtener los datos
+                        response = requests.post(
+                            'http://127.0.0.1:5000/mostrar_datos_clasificados_intervalo',
+                            json={'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin, 'empresa': empresa_seleccionada}
+                        )
+                        if response.status_code == 200:
+                            resultados_intervalo_fecha = response.json()
+                        else:
+                            modelo_mensaje = "Error en la consulta de datos en Flask."
+                    except requests.exceptions.RequestException as e:
+                        modelo_mensaje = f"Error de conexión: {e}"
+                else:
+                    modelo_mensaje = "Por favor, complete todos los campos del formulario."
+
+
+
+
+            try:
+                response = requests.post('http://127.0.0.1:5000/RESUMEN_POR_RANGO_DE_FECHAS')
+                if response.status_code == 200:
+                    data = response.json()
+                    empresas = data.get("empresas", [])
+                else:
+                    modelo_mensaje = "Error al consultar datos en el servidor Flask para modelo 2."
+            except requests.exceptions.RequestException as e:
+                modelo_mensaje = f"Error de conexión: {e}"
+            
+
+
+
+
         elif modelo_texto == 'modelo4':
             modelo_mensaje = "Reporte en PDF seleccionado."
             reportes_pdf = True
@@ -223,7 +284,9 @@ def peticiones(request):
         "resultado_model5": resultado_model5,
         'contenido_archivo_xml': contenido_archivo_xml, 
         'mensaje_confirmacion': mensaje_confirmacion,  # Mensaje de confirmación para la plantilla
-        'reportes_pdf': reportes_pdf
+        'reportes_pdf': reportes_pdf,
+        'mostrar_fechas_comboox': mostrar_fechas_comboox,
+        'resultados_intervalo_fecha': resultados_intervalo_fecha,  # Enviar a la plantilla
     })
 
 

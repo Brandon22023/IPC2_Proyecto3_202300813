@@ -672,6 +672,40 @@ def Resumen_clasificacion_fecha():
         "empresas": empresas  # Cambiar a una lista de empresas
     })
 
+@app.route('/RESUMEN_POR_RANGO_DE_FECHAS', methods=['POST'])
+def RESUMEN_POR_RANGO_DE_FECHAS():
+    # Ruta del archivo XML
+    ruta_xml = "./uploads/resultado_analisis.xml"
+    
+    # Parseo del archivo XML
+    tree = ET.parse(ruta_xml)
+    root = tree.getroot()
+
+    # Extraer fechas y empresas
+    fechas = set()
+    empresas_set = set()  # Usar un set para evitar duplicados
+
+    for respuesta in root.findall('respuesta'):
+        fecha = respuesta.find('fecha').text.strip()
+        fechas.add(fecha)
+
+        # Extraer empresas
+        for empresa in respuesta.findall(".//empresa"):
+            nombre_empresa = empresa.get("nombre")
+            empresas_set.add(nombre_empresa)  # Agregar al set para evitar duplicados
+
+    fechas = sorted(fechas)  # Ordenar las fechas
+    empresas = sorted(empresas_set)  # Ordenar las empresas
+    # Agregar "Todas las empresas" al inicio de la lista de empresas
+    empresas.insert(0, "todas las empresas")
+    
+
+    # Devolver datos en JSON
+    return jsonify({
+        "fechas": list(fechas),
+        "empresas": empresas  # Cambiar a una lista de empresas
+    })
+
 
 @app.route('/mostrar_datos_clasificados', methods=['POST'])
 def mostrar_datos_clasificados():
@@ -731,9 +765,72 @@ def mostrar_datos_clasificados():
         return jsonify({"error": str(e)}), 500
     
 
+@app.route('/mostrar_datos_clasificados_intervalo', methods=['POST'])
+def mostrar_datos_clasificados_intervalo():
+    # Obtener datos del JSON enviado desde Django
+    data = request.get_json()
+    fecha_inicio = data['fecha_inicio']  # Cambiado para recibir fecha_inicio
+    fecha_fin = data['fecha_fin']         # Cambiado para recibir fecha_fin
+    empresa_seleccionada = data['empresa']
+    
+    # Imprimir en consola los datos recibidos
+    print("Fecha inicial seleccionada:", fecha_inicio)
+    print("Fecha final seleccionada:", fecha_fin)
+    print("Empresa seleccionada:", empresa_seleccionada)
+    
+    # Ruta al archivo XML
+    ruta_xml = "./uploads/resultado_analisis.xml"
+
+    try:
+        tree = ET.parse(ruta_xml)
+        root = tree.getroot()
+        resultados = []
+        
+        # Recorrer las respuestas en el XML
+        for respuesta in root.findall("respuesta"):
+            fecha = respuesta.find("fecha").text.strip()
+            
+            # Comparar la fecha para verificar si está dentro del intervalo
+            if fecha_inicio <= fecha <= fecha_fin:  # Verifica si la fecha está en el intervalo
+                for empresa in respuesta.find("analisis").findall("empresa"):
+                    nombre_empresa = empresa.get("nombre")
+                    
+                    # Comparar el nombre de la empresa o si se seleccionaron todas
+                    if empresa_seleccionada == "todas las empresas" or nombre_empresa == empresa_seleccionada:
+                        total = int(empresa.find("mensajes/total").text)  # Convertir a int
+                        positivos = int(empresa.find("mensajes/positivos").text)  # Convertir a int
+                        negativos = int(empresa.find("mensajes/negativos").text)  # Convertir a int
+                        neutros = int(empresa.find("mensajes/neutros").text)  # Convertir a int
+                        
+                        # Agregar los resultados encontrados a la lista
+                        resultados.append({
+                            "empresa": nombre_empresa,
+                            "total": total,
+                            "positivos": positivos,
+                            "negativos": negativos,
+                            "neutros": neutros,
+                            "fecha": fecha  # Agregar la fecha correspondiente
+                        })
+
+        print("Resultados encontrados:", resultados)
+        crear_pdf_intervalo(fecha_inicio, fecha_fin, empresa_seleccionada) 
+        # Verificar si hay resultados antes de generar la gráfica
+        if resultados:
+            
+            
+            return jsonify(resultados), 200
+        else:
+            return jsonify({"error": "No se encontraron datos"}), 404
+
+    except Exception as e:
+        print("Error:", str(e))  # Imprimir el error
+        return jsonify({"error": str(e)}), 500
+    
+
 def crear_grafica(resultados, fecha_seleccionada, empresa_seleccionada):
     # Crear la carpeta IMG si no existe
     os.makedirs('./IMG', exist_ok=True)
+
 
     # Extraer datos para la gráfica
     categorias = ['Total', 'Positivos', 'Negativos', 'Neutros']
@@ -788,6 +885,48 @@ def crear_pdf(fecha_seleccionada, empresa_seleccionada):
 
     # Agregar la imagen de la gráfica
     pdf.image('./IMG/grafica_barras_clasificacion_fecha.png', x=10, y=50, w=190)
+
+    # Guardar el PDF temporal
+    pdf.output(ruta_pdf_temp)
+    print(f"PDF temporal guardado en {ruta_pdf_temp}")
+
+    # Combinar el PDF temporal con el PDF existente
+    merger = PdfMerger()
+    if os.path.exists(ruta_pdf_existente):
+        merger.append(ruta_pdf_existente)  # Agrega el PDF existente
+    merger.append(ruta_pdf_temp)           # Agrega el nuevo contenido
+
+    # Guardar el PDF combinado en la ruta del PDF existente
+    merger.write(ruta_pdf_existente)
+    merger.close()
+
+    # Eliminar el PDF temporal
+    os.remove(ruta_pdf_temp)
+    print(f"Contenido agregado a {ruta_pdf_existente}")
+
+
+def crear_pdf_intervalo(fecha_inicio, fecha_fin, empresa_seleccionada):
+    # Crear la carpeta Reportes si no existe
+    os.makedirs('./Reportes', exist_ok=True)
+
+    # Ruta para el PDF temporal
+    ruta_pdf_temp = "./Reportes/Resumen_clasificacion_temp.pdf"
+    ruta_pdf_existente = "./Reportes/REPORTES.pdf"
+
+    # Crear el PDF temporal
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Agregar título
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, '3. RESUMEN POR RANGO DE FECHAS', ln=True, align='C')
+
+    # Agregar fecha y empresa seleccionada
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, f'Fecha Inicio seleccionada: {fecha_inicio}', ln=True)
+    pdf.cell(200, 10, f'Fecha Fin seleccionada: {fecha_fin}', ln=True)
+    pdf.cell(200, 10, f'Empresa Seleccionada: {empresa_seleccionada}', ln=True)
+
 
     # Guardar el PDF temporal
     pdf.output(ruta_pdf_temp)
